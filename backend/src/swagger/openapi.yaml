@@ -1,0 +1,1103 @@
+openapi: 3.0.3
+info:
+  title: WebProgramming Shoe Shop API
+  version: 1.0.0
+  description: |
+    WebProgramming 팀프로젝트 백엔드 API 문서.
+    - 세션 쿠키(connect.sid) 기반 인증
+    - 상품/장바구니/주문/리뷰/관리자 기능 포함
+
+servers:
+  - url: http://localhost:3000
+
+tags:
+  - name: Auth
+    description: 로그인/로그아웃/내 정보
+  - name: Products
+    description: 상품 조회
+  - name: Cart
+    description: 장바구니
+  - name: Orders
+    description: 주문/결제
+  - name: Reviews
+    description: 후기
+  - name: Admin
+    description: 관리자 기능
+
+components:
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: connect.sid
+
+  schemas:
+    UserResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "675c1c0a0f2b2b0012ab3456"
+        email:
+          type: string
+          example: "user01@test.com"
+        name:
+          type: string
+          example: "홍길동"
+        phone:
+          type: string
+          example: "010-1234-5678"
+        role:
+          type: string
+          example: "user"
+      required: [id, email, name, phone, role]
+
+    SessionUser:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "675c1c0a0f2b2b0012ab3456"
+        role:
+          type: string
+          example: "user"
+        name:
+          type: string
+          example: "홍길동"
+      required: [id, role, name]
+
+    ErrorResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "에러 메시지"
+      required: [message]
+
+    # ===== User =====
+    User:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 693a8bfdf23e4f79f81649e0
+        email:
+          type: string
+          example: user01@test.com
+        name:
+          type: string
+          example: "홍길동"
+        phone:
+          type: string
+          example: "010-1234-5678"
+        role:
+          type: string
+          enum: [CUSTOMER, ADMIN]
+          example: CUSTOMER
+
+    # ===== Product =====
+    Product:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 693a8bfdf23e4f79f81649e0
+        name:
+          type: string
+          example: "코지 슬립온"
+        shortDesc:
+          type: string
+          example: "편안한 착화감의 데일리 슈즈"
+        images:
+          type: array
+          items:
+            type: string
+          example:
+            - "/uploads/image1.avif"
+        categories:
+          type: array
+          items:
+            type: string
+            enum: [LIFESTYLE, SLIPON]
+          example: ["LIFESTYLE"]
+        basePrice:
+          type: number
+          example: 89000
+        discountRate:
+          type: number
+          minimum: 0
+          maximum: 100
+          example: 10
+        availableSizes:
+          type: array
+          items:
+            type: number
+          example: [250, 255, 260, 265]
+        gender:
+          type: string
+          enum: ["남성", "여성", "공용"]
+          example: "공용"
+        materials:
+          type: array
+          items:
+            type: string
+          example: ["울"]
+        saleStart:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-12-01T00:00:00.000Z"
+        saleEnd:
+          type: string
+          format: date-time
+          nullable: true
+          example: "2025-12-31T00:00:00.000Z"
+        salesCount:
+          type: number
+          example: 12
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ===== Review =====
+    Review:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 70aa8bfdf23e4f79f8164900
+        product:
+          type: string
+          example: 693a8bfdf23e4f79f81649e0
+        user:
+          oneOf:
+            - type: string
+              example: 693a8bfdf23e4f79f81649f1
+            - type: object
+              properties:
+                _id:
+                  type: string
+                  example: 693a8bfdf23e4f79f81649f1
+                name:
+                  type: string
+                  example: "김관우"
+        rating:
+          type: number
+          minimum: 1
+          maximum: 5
+          example: 5
+        comment:
+          type: string
+          example: "신발이 정말 편해요!"
+        createdAt:
+          type: string
+          format: date-time
+
+    ProductWithReviews:
+      type: object
+      properties:
+        product:
+          $ref: "#/components/schemas/Product"
+        reviews:
+          type: array
+          items:
+            $ref: "#/components/schemas/Review"
+
+    # ===== Cart =====
+    CartItem:
+      type: object
+      properties:
+        _id:
+          type: string
+          example: 70aa8bfdf23e4f79f8164999
+        product:
+          oneOf:
+            - type: string
+              example: 693a8bfdf23e4f79f81649e0
+            - $ref: "#/components/schemas/Product"
+        size:
+          type: number
+          example: 260
+        quantity:
+          type: number
+          example: 2
+
+    Cart:
+      type: object
+      properties:
+        _id:
+          type: string
+        user:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/CartItem"
+        updatedAt:
+          type: string
+          format: date-time
+
+    # ===== Orders =====
+    OrderItem:
+      type: object
+      properties:
+        product:
+          type: string
+          example: 693a8bfdf23e4f79f81649e0
+        nameSnapshot:
+          type: string
+          example: "코지 슬립온"
+        size:
+          type: number
+          example: 260
+        quantity:
+          type: number
+          example: 1
+        unitPrice:
+          type: number
+          example: 80100
+        lineTotal:
+          type: number
+          example: 80100
+
+    Order:
+      type: object
+      properties:
+        _id:
+          type: string
+        user:
+          type: string
+        items:
+          type: array
+          items:
+            $ref: "#/components/schemas/OrderItem"
+        totalAmount:
+          type: number
+          example: 160200
+        paidAt:
+          type: string
+          format: date-time
+
+    SalesStat:
+      type: object
+      properties:
+        productId:
+          type: string
+          example: 693a8bfdf23e4f79f81649e0
+        name:
+          type: string
+          example: "코지 슬립온"
+        quantity:
+          type: number
+          example: 12
+        revenue:
+          type: number
+          example: 1548000
+
+paths:
+  # =========================
+  # Auth
+  # =========================
+  /api/auth/register:
+    post:
+      tags: [Auth]
+      summary: 회원가입
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password, name, phone]
+              properties:
+                email:
+                  type: string
+                  example: user01@test.com
+                password:
+                  type: string
+                  example: "1234"
+                name:
+                  type: string
+                  example: "홍길동"
+                phone:
+                  type: string
+                  example: "010-1234-5678"
+      responses:
+        "200":
+          description: 가입 성공 (세션 생성)
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: connect.sid 세션 쿠키
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: 요청값 오류/중복 이메일
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/login:
+    post:
+      tags: [Auth]
+      summary: 로그인
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  example: admin@test.com
+                password:
+                  type: string
+                  example: "1234"
+      responses:
+        "200":
+          description: 로그인 성공 (세션 쿠키 발급)
+          headers:
+            Set-Cookie:
+              schema:
+                type: string
+              description: connect.sid 세션 쿠키
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/UserResponse"
+        "400":
+          description: 요청값 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 로그인 실패(인증 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/logout:
+    post:
+      tags: [Auth]
+      summary: 로그아웃
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: 로그아웃 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "logged out"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/auth/me:
+    get:
+      tags: [Auth]
+      summary: 내 정보 조회
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: 내 정보 (세션 최소 정보)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SessionUser"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # =========================
+  # Products
+  # =========================
+  /api/products:
+    get:
+      tags: [Products]
+      summary: 전체 상품 조회
+      responses:
+        "200":
+          description: 상품 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: 서버 오류(상품 목록 조회 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/products/popular:
+    get:
+      tags: [Products]
+      summary: 인기 상품 조회
+      description: salesCount 내림차순 상위 8개
+      responses:
+        "200":
+          description: 인기 상품 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: 서버 오류(인기 상품 조회 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+                
+  /api/products/{id}:
+    get:
+      tags: [Products]
+      summary: 단일 상품 조회 (리뷰 포함)
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: 693a8bfdf23e4f79f81649e0
+      responses:
+        "200":
+          description: 상품 + 리뷰
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProductWithReviews"
+        "400":
+          description: 잘못된 id 형식
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 상품 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류(상품 조회 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # =========================
+  # Cart
+  # =========================
+  /api/cart:
+    get:
+      tags: [Cart]
+      summary: 장바구니 조회
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: 장바구니
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    
+  /api/cart/add:
+    post:
+      tags: [Cart]
+      summary: 장바구니 담기
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, size, quantity]   # (4) 코드 기준
+              properties:
+                productId:
+                  type: string
+                  example: "675c1c0a0f2b2b0012ab3456"
+                size:
+                  type: number
+                  example: 270
+                quantity:
+                  type: number
+                  minimum: 1
+                  example: 1
+      responses:
+        "200":
+          description: 담기 성공(갱신된 장바구니 반환)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: 요청값 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 상품을 찾을 수 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/cart/item:
+    patch:
+      tags: [Cart]
+      summary: 장바구니 수량 변경 (0 이하면 삭제)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, size, quantity]
+              properties:
+                productId:
+                  type: string
+                  example: "675c1c0a0f2b2b0012ab3456"
+                size:
+                  type: number
+                  example: 270
+                quantity:
+                  type: number
+                  example: 2
+      responses:
+        "200":
+          description: 수정 성공(갱신된 장바구니 반환)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "400":
+          description: 요청값 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 장바구니에 해당 상품이 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/cart/clear:
+    delete:
+      tags: [Cart]
+      summary: 장바구니 전체 비우기
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: 비우기 성공(빈 장바구니 반환)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/cart/{itemId}:
+    delete:
+      tags: [Cart]
+      summary: 장바구니 아이템 삭제
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: itemId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 삭제 성공(갱신된 장바구니 반환)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Cart"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 장바구니에 해당 아이템이 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # =========================
+  # Orders
+  # =========================
+  /api/orders/checkout:
+    post:
+      tags: [Orders]
+      summary: 결제/주문 생성
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: 생성된 주문
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Order"
+        "400":
+          description: 장바구니 비어있음 등
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류(결제 처리 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/orders/me:
+    get:
+      tags: [Orders]
+      summary: 내 주문 내역
+      security:
+        - cookieAuth: []
+      responses:
+        "200":
+          description: 주문 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Order"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류(주문 내역 조회 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # =========================
+  # Reviews
+  # =========================
+  /api/reviews/product/{productId}:
+    get:
+      tags: [Reviews]
+      summary: 특정 상품 후기 조회
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+          example: 693a8bfdf23e4f79f81649e0
+      responses:
+        "200":
+          description: 상품 리뷰 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Review"
+        "500":
+          description: 서버 오류(상품 리뷰 조회 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/reviews/write:
+    post:
+      tags: [Reviews]
+      summary: 후기 작성 (구매자만 가능)
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [productId, rating, comment]
+              properties:
+                productId:
+                  type: string
+                  example: 693a8bfdf23e4f79f81649e0
+                rating:
+                  type: number
+                  minimum: 1
+                  maximum: 5
+                  example: 5
+                comment:
+                  type: string
+                  example: "정말 편해요!"
+      responses:
+        "200":
+          description: 생성된 리뷰
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Review"
+        "400":
+          description: 구매 이력 없음 또는 입력 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류(후기 작성 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  # =========================
+  # Admin
+  # =========================
+  /api/admin/products:
+    post:
+      tags: [Admin]
+      summary: 상품 등록 (이미지 업로드 포함)
+      description: |
+        multipart/form-data 로 전송합니다.
+        이미지 파일 필드명은 images 이고 최대 10개까지 업로드 가능합니다.
+      security:
+        - cookieAuth: []
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [name, basePrice, images]
+              properties:
+                name:
+                  type: string
+                  example: "코지 슬립온"
+                shortDesc:
+                  type: string
+                  example: "편안한 착화감의 데일리 슈즈"
+                categories:
+                  type: string
+                  description: "콤마(,)로 구분한 문자열 (예: LIFESTYLE,SLIPON)"
+                  example: "LIFESTYLE"
+                basePrice:
+                  type: number
+                  example: 89000
+                discountRate:
+                  type: number
+                  description: "할인율(%)"
+                  example: 20
+                availableSizes:
+                  type: string
+                  description: "콤마(,)로 구분한 숫자 문자열 (예: 250,255,260)"
+                  example: "250,255,260"
+                gender:
+                  type: string
+                  enum: ["남성", "여성", "공용"]
+                  example: "공용"
+                materials:
+                  type: string
+                  description: "콤마(,)로 구분한 문자열 (예: 울)"
+                  example: "울"
+                saleStart:
+                  type: string
+                  nullable: true
+                  example: "2025-12-01"
+                saleEnd:
+                  type: string
+                  nullable: true
+                  example: "2025-12-31"
+                images:
+                  type: array
+                  description: "업로드 파일들 (field name: images)"
+                  items:
+                    type: string
+                    format: binary
+      responses:
+        "200":
+          description: 생성된 상품 반환
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "400":
+          description: 필수 필드 누락 또는 파일 누락
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: 인증 실패(로그인 필요)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "403":
+          description: 관리자 권한 필요
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/admin/products/{id}/sizes:
+    patch:
+      tags: [Admin]
+      summary: 상품 가용 사이즈 변경
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: 693a8bfdf23e4f79f81649e0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                availableSizes:
+                  type: string
+                  description: "콤마(,)로 구분한 숫자 문자열 (예: 250,255,260)"
+                  example: "250,255,260"
+      responses:
+        "200":
+          description: 변경된 상품 반환
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: 상품 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/admin/products/{id}/discount:
+    patch:
+      tags: [Admin]
+      summary: 상품 할인 정책 변경
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          example: 693a8bfdf23e4f79f81649e0
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                discountRate:
+                  type: number
+                  example: 15
+                saleStart:
+                  type: string
+                  nullable: true
+                  example: "2025-12-01"
+                saleEnd:
+                  type: string
+                  nullable: true
+                  example: "2025-12-31"
+      responses:
+        "200":
+          description: 변경된 상품 반환
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Product"
+        "404":
+          description: 상품 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /api/admin/sales:
+    get:
+      tags: [Admin]
+      summary: 판매 현황 조회 (기간 필터)
+      description: |
+        Order 컬렉션에서 paidAt 기준으로 기간 필터 후,
+        items를 unwind하여 product별 판매량/매출(revenue)을 집계합니다.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: start
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "시작일(없으면 1970-01-01)"
+          example: "2025-12-01"
+        - name: end
+          in: query
+          required: false
+          schema:
+            type: string
+          description: "종료일(없으면 현재시간)"
+          example: "2025-12-31"
+      responses:
+        "200":
+          description: product별 판매 통계 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SalesStat"
+        "500":
+          description: 서버 오류
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
