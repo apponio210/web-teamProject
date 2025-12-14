@@ -1,3 +1,4 @@
+import { useState } from "react";
 import styled from "styled-components";
 import ProductImages from "./ProductImages";
 import ProductInfo from "./ProductInfo";
@@ -61,15 +62,24 @@ const WhiteSection = styled.div`
 `;
 
 const ProductDetail = ({ product, reviews, onRefresh }) => {
+  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+
   return (
     <PageContainer>
       <TopSection>
         <LeftColumn>
-          <ProductImages images={product?.images} />
+          <ProductImages
+            images={product?.images}
+            currentIndex={selectedImageIndex}
+          />
           <Accordion />
         </LeftColumn>
         <RightColumn>
-          <ProductInfo product={product} />
+          <ProductInfo
+            product={product}
+            selectedImageIndex={selectedImageIndex}
+            onImageSelect={setSelectedImageIndex}
+          />
         </RightColumn>
       </TopSection>
 

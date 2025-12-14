@@ -2,7 +2,6 @@ import React, { useMemo, useState } from "react";
 import styled from "styled-components";
 
 export default function PopularSlider() {
-  // ✅ 총 8개 (원하는 데이터로 바꿔도 됨)
   const items = useMemo(
     () => [
       {

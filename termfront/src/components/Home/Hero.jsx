@@ -1,7 +1,9 @@
 import React, { useEffect, useRef, useState } from "react";
 import styled from "styled-components";
+import { useNavigate } from "react-router-dom";
 
 export default function Hero() {
+  const navigate = useNavigate();
   // ✅ public 폴더에 이미지 넣었다고 가정: /slide1.jpg, /slide2.jpg, /slide3.jpg
   const slides = [
     {
@@ -56,7 +58,7 @@ export default function Hero() {
               <Title>{s.title}</Title>
               <Desc>{s.desc}</Desc>
               <BtnRow>
-                <GhostBtn>남성</GhostBtn>
+                <GhostBtn onClick={() => navigate("/menshoes")}>남성</GhostBtn>
                 <GhostBtn>여성</GhostBtn>
               </BtnRow>
             </TextBox>

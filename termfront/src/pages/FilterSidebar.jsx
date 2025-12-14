@@ -158,13 +158,10 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
     "320",
   ];
 
-  const materials = [
-    "가볍고 시원한 Tree",
-    "부드럽고 따뜻한 Wool",
-    "면",
-    "캔버스",
-  ];
+  // 소재 (필터링 기능 있음)
+  const materials = ["가볍고 시원한 Tree", "부드럽고 따뜻한 Wool"];
 
+  // 기능 (렌더링만, 필터링 기능 없음)
   const features = [
     "비즈니스",
     "캐주얼",
@@ -181,6 +178,7 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
     "애슬레저",
   ];
 
+  // 모델 (렌더링만, 필터링 기능 없음)
   const models = [
     "대셔",
     "라운저",
@@ -192,12 +190,18 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
     "플라이어",
   ];
 
-  const handleFilterClick = (type, value) => {
-    const current = filters[type] || [];
-    const updated = current.includes(value)
-      ? current.filter((v) => v !== value)
-      : [...current, value];
-    onFilterChange({ ...filters, [type]: updated });
+  const handleSizeClick = (size) => {
+    const newSizes = filters.sizes.includes(size)
+      ? filters.sizes.filter((s) => s !== size)
+      : [...filters.sizes, size];
+    onFilterChange({ ...filters, sizes: newSizes });
+  };
+
+  const handleMaterialClick = (material) => {
+    const newMaterials = filters.materials.includes(material)
+      ? filters.materials.filter((m) => m !== material)
+      : [...filters.materials, material];
+    onFilterChange({ ...filters, materials: newMaterials });
   };
 
   const removeFilter = (type, value) => {
@@ -207,11 +211,7 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
     });
   };
 
-  const hasFilters =
-    filters.sizes?.length > 0 ||
-    filters.materials?.length > 0 ||
-    filters.features?.length > 0 ||
-    filters.models?.length > 0;
+  const hasFilters = filters.sizes.length > 0 || filters.materials.length > 0;
 
   return (
     <Sidebar>
@@ -219,33 +219,17 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
         <AppliedFiltersSection>
           <AppliedFiltersTitle>적용된 필터</AppliedFiltersTitle>
           <AppliedFilters>
-            {filters.sizes?.map((size) => (
+            {filters.sizes.map((size) => (
               <FilterTag key={size} onClick={() => removeFilter("sizes", size)}>
                 {size} ×
               </FilterTag>
             ))}
-            {filters.materials?.map((material) => (
+            {filters.materials.map((material) => (
               <FilterTag
                 key={material}
                 onClick={() => removeFilter("materials", material)}
               >
                 {material} ×
-              </FilterTag>
-            ))}
-            {filters.features?.map((feature) => (
-              <FilterTag
-                key={feature}
-                onClick={() => removeFilter("features", feature)}
-              >
-                {feature} ×
-              </FilterTag>
-            ))}
-            {filters.models?.map((model) => (
-              <FilterTag
-                key={model}
-                onClick={() => removeFilter("models", model)}
-              >
-                {model} ×
               </FilterTag>
             ))}
           </AppliedFilters>
@@ -259,8 +243,8 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
           {sizes.map((size) => (
             <SizeBtn
               key={size}
-              $active={filters.sizes?.includes(size)}
-              onClick={() => handleFilterClick("sizes", size)}
+              $active={filters.sizes.includes(size)}
+              onClick={() => handleSizeClick(size)}
             >
               {size}
             </SizeBtn>
@@ -275,10 +259,10 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
             <CheckboxLabel key={material}>
               <input
                 type="checkbox"
-                checked={filters.materials?.includes(material)}
-                onChange={() => handleFilterClick("materials", material)}
+                checked={filters.materials.includes(material)}
+                onChange={() => handleMaterialClick(material)}
               />
-              <Checkbox $checked={filters.materials?.includes(material)} />
+              <Checkbox $checked={filters.materials.includes(material)} />
               {material}
             </CheckboxLabel>
           ))}
@@ -290,12 +274,8 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
         <CheckboxList>
           {features.map((feature) => (
             <CheckboxLabel key={feature}>
-              <input
-                type="checkbox"
-                checked={filters.features?.includes(feature)}
-                onChange={() => handleFilterClick("features", feature)}
-              />
-              <Checkbox $checked={filters.features?.includes(feature)} />
+              <input type="checkbox" disabled />
+              <Checkbox $checked={false} />
               {feature}
             </CheckboxLabel>
           ))}
@@ -307,12 +287,8 @@ const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
         <CheckboxList>
           {models.map((model) => (
             <CheckboxLabel key={model}>
-              <input
-                type="checkbox"
-                checked={filters.models?.includes(model)}
-                onChange={() => handleFilterClick("models", model)}
-              />
-              <Checkbox $checked={filters.models?.includes(model)} />
+              <input type="checkbox" disabled />
+              <Checkbox $checked={false} />
               {model}
             </CheckboxLabel>
           ))}
