@@ -105,9 +105,14 @@ components:
         name:
           type: string
           example: "코지 슬립온"
+        short:
+          type: string
+          description: 짤막한 상품 소개(리스트/카드용)
+          example: 캐주얼, 클래식 스니커즈
         shortDesc:
           type: string
-          example: "편안한 착화감의 데일리 슈즈"
+          description: 상세 설명(상세페이지 본문)
+          example: 부드러운 소재와 쿠션감으로 장시간 착용에도 편안합니다.
         images:
           type: array
           items:
@@ -128,11 +133,37 @@ components:
           minimum: 0
           maximum: 100
           example: 10
-        availableSizes:
+        allSizes:
           type: array
+          description: 전체 사이즈 목록(버튼 UI 표시용)
           items:
             type: number
-          example: [250, 255, 260, 265]
+          example: [250, 255, 260, 265, 270]
+        sizes:
+          type: array
+          description: 사이즈별 재고 목록
+          items:
+            type: object
+            properties:
+              size:
+                type: number
+                example: 260
+              stock:
+                type: number
+                minimum: 0
+                example: 10
+          example:
+            - size: 250
+              stock: 10
+            - size: 260
+              stock: 0
+        availableSizes:
+          type: array
+          description: 재고(stock>0) 기반으로 계산된 가용 사이즈(virtual)
+          items:
+            type: number
+          readOnly: true
+          example: [250]
         gender:
           type: string
           enum: ["남성", "여성", "공용"]
@@ -517,7 +548,93 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-                
+  /api/products/available-size/{size}:
+    get:
+      tags: [Products]
+      summary: 특정 사이즈 구매 가능 상품 조회
+      parameters:
+        - in: path
+          name: size
+          required: true
+          schema:
+            type: number
+          example: 260
+      responses:
+        "200":
+          description: 상품 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "400":
+          description: 잘못된 요청
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+  /api/products/{id}/sizes:
+    get:
+      tags: [Products]
+      summary: 단일 상품 사이즈/재고 정보 조회
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: string
+      responses:
+        "200":
+          description: 사이즈 정보
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  allSizes:
+                    type: array
+                    items:
+                      type: number
+                  sizes:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        size:
+                          type: number
+                        stock:
+                          type: number
+                          minimum: 0
+                  availableSizes:
+                    type: array
+                    items:
+                      type: number
+        "400":
+          description: 잘못된 상품 ID 형식
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "404":
+          description: 상품 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "500":
+          description: 서버 에러
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+ 
   /api/products/{id}:
     get:
       tags: [Products]
@@ -633,6 +750,12 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 재고 부족/품절
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
         "500":
           description: 서버 오류
           content:
@@ -684,6 +807,12 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: 장바구니에 해당 상품이 없음
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 재고 부족/품절
           content:
             application/json:
               schema:
@@ -783,6 +912,12 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "401":
           description: 인증 실패
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: 재고 부족/품절
           content:
             application/json:
               schema:
@@ -921,11 +1056,15 @@ paths:
           multipart/form-data:
             schema:
               type: object
-              required: [name, basePrice, images]
+              required: [name, short, basePrice, images]
               properties:
                 name:
                   type: string
                   example: "코지 슬립온"
+                short:
+                  type: string
+                  description: 짤막한 상품 소개
+                  example: 캐주얼, 클래식 스니커즈
                 shortDesc:
                   type: string
                   example: "편안한 착화감의 데일리 슈즈"
@@ -940,10 +1079,14 @@ paths:
                   type: number
                   description: "할인율(%)"
                   example: 20
-                availableSizes:
+                allSizes:
                   type: string
-                  description: "콤마(,)로 구분한 숫자 문자열 (예: 250,255,260)"
-                  example: "250,255,260"
+                  description: "콤마(,)로 구분한 전체 사이즈 (예: 250,255,260)"
+                  example: "250,255,260,265,270"
+                sizes:
+                  type: string
+                  description: "콤마(,)로 구분한 사이즈:재고 목록 (예: 250:10,255:0,260:5)"
+                  example: "250:10,255:0,260:5"
                 gender:
                   type: string
                   enum: ["남성", "여성", "공용"]
@@ -1018,10 +1161,14 @@ paths:
             schema:
               type: object
               properties:
-                availableSizes:
+                allSizes:
                   type: string
-                  description: "콤마(,)로 구분한 숫자 문자열 (예: 250,255,260)"
-                  example: "250,255,260"
+                  description: "콤마(,)로 구분한 전체 사이즈 (예: 250,255,260)"
+                  example: "250,255,260,265,270"
+                sizes:
+                  type: string
+                  description: "콤마(,)로 구분한 사이즈:재고 목록 (예: 250:10,255:0,260:5)"
+                  example: "250:10,255:0,260:5"
       responses:
         "200":
           description: 변경된 상품 반환

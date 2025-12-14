@@ -1,5 +1,6 @@
 // src/routes/orders.js
 const express = require("express");
+const mongoose = require("mongoose");
 const { requireAuth } = require("../middleware/auth");
 const Order = require("../models/Order");
 const Cart = require("../models/Cart");
@@ -9,60 +10,113 @@ const router = express.Router();
 
 // 결제(체크아웃)
 router.post("/checkout", requireAuth, async (req, res) => {
+    const session = await mongoose.startSession();
+
     try {
         const userId = req.session.user.id;
 
-        const cart = await Cart.findOne({ user: userId }).populate("items.product");
-        if (!cart || cart.items.length === 0) {
-            return res.status(400).json({ message: "장바구니가 비어 있습니다." });
-        }
+        let createdOrder = null;
 
-        // Cart 정보 기준으로 총액 계산
-        const items = cart.items.map((item) => {
-            // Product.getSalePrice()를 사용해서 다시 보정할 수도 있음
-            const product = item.product;
-            const salePrice =
-                typeof product.getSalePrice === "function"
-                    ? product.getSalePrice()
-                    : product.basePrice;
+        await session.withTransaction(async () => {
+            const cart = await Cart.findOne({ user: userId })
+                .populate("items.product")
+                .session(session);
 
-            const unitPrice = salePrice;
-            const lineTotal = salePrice * item.quantity;
+            if (!cart || cart.items.length === 0) {
+                throw new Error("EMPTY_CART");
+            }
 
-            return {
-                product: product._id,
-                nameSnapshot: product.name,
-                size: item.size,
-                quantity: item.quantity,
-                unitPrice,
-                lineTotal
-            };
-        });
+            // 1) 재고 검증 + 차감 (원자적으로)
+            for (const item of cart.items) {
+                const productId = item.product?._id;
+                const size = Number(item.size);
+                const qty = Number(item.quantity);
 
-        const totalAmount = items.reduce((sum, it) => sum + it.lineTotal, 0);
+                if (!productId || Number.isNaN(size) || Number.isNaN(qty) || qty <= 0) {
+                    throw new Error("INVALID_CART_ITEM");
+                }
 
-        const order = await Order.create({
-            user: userId,
-            items,
-            totalAmount,
-            paidAt: new Date()
-        });
+                // 해당 사이즈 재고가 qty 이상일 때만 차감
+                const updated = await Product.findOneAndUpdate(
+                    {
+                        _id: productId,
+                        sizes: { $elemMatch: { size, stock: { $gte: qty } } },
+                    },
+                    {
+                        $inc: {
+                            "sizes.$.stock": -qty, // ✅ 재고 차감
+                            salesCount: qty,       // ✅ 판매량 증가
+                        },
+                    },
+                    { new: true, session }
+                );
 
-        // 상품별 salesCount 증가
-        for (const it of items) {
-            await Product.findByIdAndUpdate(it.product, {
-                $inc: { salesCount: it.quantity }
+                if (!updated) {
+                    // 품절/재고부족/사이즈 없음
+                    throw new Error("OUT_OF_STOCK");
+                }
+            }
+
+            // 2) 주문 아이템 스냅샷 생성 + 총액 계산
+            const items = cart.items.map((item) => {
+                const product = item.product;
+
+                const salePrice =
+                    typeof product.getSalePrice === "function"
+                        ? product.getSalePrice()
+                        : product.basePrice;
+
+                const unitPrice = salePrice;
+                const lineTotal = salePrice * item.quantity;
+
+                return {
+                    product: product._id,
+                    nameSnapshot: product.name,
+                    size: item.size,
+                    quantity: item.quantity,
+                    unitPrice,
+                    lineTotal,
+                };
             });
-        }
 
-        // 장바구니 비우기
-        cart.items = [];
-        await cart.save();
+            const totalAmount = items.reduce((sum, it) => sum + it.lineTotal, 0);
 
-        res.json(order);
+            // 3) 주문 생성
+            createdOrder = await Order.create(
+                [
+                    {
+                        user: userId,
+                        items,
+                        totalAmount,
+                        paidAt: new Date(),
+                    },
+                ],
+                { session }
+            );
+
+            // 4) 장바구니 비우기
+            cart.items = [];
+            await cart.save({ session });
+        });
+
+        // create() 배열로 만들었으니 첫 번째 꺼
+        res.json(createdOrder[0]);
     } catch (err) {
         console.error("POST /api/orders/checkout error:", err);
+
+        if (err.message === "EMPTY_CART") {
+            return res.status(400).json({ message: "장바구니가 비어 있습니다." });
+        }
+        if (err.message === "OUT_OF_STOCK") {
+            return res.status(409).json({ message: "재고가 부족하거나 품절된 사이즈가 있습니다." });
+        }
+        if (err.message === "INVALID_CART_ITEM") {
+            return res.status(400).json({ message: "장바구니 항목이 올바르지 않습니다." });
+        }
+
         res.status(500).json({ message: "결제 처리 실패" });
+    } finally {
+        session.endSession();
     }
 });
 
