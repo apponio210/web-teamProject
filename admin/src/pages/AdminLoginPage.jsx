@@ -32,8 +32,7 @@ export default function AdminLoginPage() {
       // (선택) admin 쪽 로컬 저장
       localStorage.setItem("adminUser", JSON.stringify(user));
 
-      // ✅ 대시보드로 이동
-      navigate("/dashboard", { replace: true });
+      navigate("/products", { replace: true });
     } catch (err) {
       setErrorMsg(
         err?.response?.data?.message ||
