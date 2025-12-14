@@ -6,6 +6,7 @@ import ProductDetailPage from "./pages/ProductDetailPage";
 import RootLayout from "./layouts/RootLayout";
 import MainPage from "./pages/MainPage";
 import LoginPage from "./pages/LoginPage";
+import MyPage from "./pages/MyPage";
 export default function App() {
   return (
     <BrowserRouter>
@@ -13,6 +14,7 @@ export default function App() {
         <Route element={<RootLayout />}>
           <Route path="/" element={<MainPage />} />
           <Route path="/login" element={<LoginPage />} />
+          <Route path="/mypage" element={<MyPage />} />
         </Route>
       </Routes>
     </BrowserRouter>
