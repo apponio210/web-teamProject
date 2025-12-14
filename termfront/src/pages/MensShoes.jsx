@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import FilterSidebar from "./FilterSidebar";
 import ProductGrid from "./ProductGrid";
-import BottomBanner from "../component/BottomBanner";
+import BottomBanner from "../components/BottomBanner";
 import { getProducts, transformProducts } from "../api/product";
 
 const Breadcrumb = styled.div`

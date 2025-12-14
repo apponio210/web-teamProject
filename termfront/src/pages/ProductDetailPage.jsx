@@ -1,9 +1,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { useParams } from "react-router-dom";
 import styled from "styled-components";
-import ProductDetail from "../component/ProductDetail";
 import { getProductById, transformProductDetail } from "../api/product";
-
+import ProductDetail from "../components/ProductDetail";
 const LoadingWrapper = styled.div`
   display: flex;
   justify-content: center;
