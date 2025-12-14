@@ -1021,7 +1021,97 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/ErrorResponse"
-
+  /api/orders/admin/products:
+    get:
+      tags: [Orders, Admin]
+      summary: 관리자 - 제품별 판매 현황 조회
+      description: |
+        관리자 전용 API  
+        각 제품의 판매수량과 할인 적용된 매출을 조회합니다.
+        조회 기간(from, to) 필터링을 지원합니다.
+      security:
+        - cookieAuth: []
+      parameters:
+        - name: from
+          in: query
+          required: false
+          description: 조회 시작일 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: to
+          in: query
+          required: false
+          description: 조회 종료일 (YYYY-MM-DD)
+          schema:
+            type: string
+            format: date
+        - name: page
+          in: query
+          required: false
+          description: 페이지 번호 (기본값 1)
+          schema:
+            type: integer
+            default: 1
+        - name: limit
+          in: query
+          required: false
+          description: 페이지당 개수 (기본값 50)
+          schema:
+            type: integer
+            default: 50
+        - name: sort
+          in: query
+          required: false
+          description: 정렬 기준
+          schema:
+            type: string
+            enum: [revenue, quantity, name]
+            default: revenue
+      responses:
+        "200":
+          description: 제품별 판매 현황 조회 성공
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  total:
+                    type: integer
+                    example: 3
+                  page:
+                    type: integer
+                    example: 1
+                  limit:
+                    type: integer
+                    example: 50
+                  products:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        _id:
+                          type: string
+                          description: 상품 ID
+                          example: 65f1a2c9a12b3c0012345678
+                        name:
+                          type: string
+                          description: 상품명
+                          example: AIR RUNNER
+                        soldQty:
+                          type: integer
+                          description: 판매 수량
+                          example: 12
+                        revenue:
+                          type: integer
+                          description: 할인 적용된 총 매출
+                          example: 118800
+        "401":
+          description: 인증 실패
+        "403":
+          description: 관리자 권한 없음
+        "500":
+          description: 서버 오류
   # =========================
   # Reviews
   # =========================
