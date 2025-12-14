@@ -2,16 +2,23 @@ import React, { useState, useEffect, useMemo } from "react";
 import styled from "styled-components";
 import FilterSidebar from "./FilterSidebar";
 import ProductGrid from "./ProductGrid";
-import BottomBanner from "../components/BottomBanner";
 import { getProducts, transformProducts } from "../api/product";
+import Extra from "../components/Home/Extra";
 
+// 컴포넌트 밖으로 이동 (경고 해결)
+const MATERIAL_MAP = {
+  "부드럽고 따뜻한 Wool": "울",
+  "가볍고 시원한 Tree": "트리",
+};
+
+// ============ styled-components 전부 그대로 유지 ============
 const Breadcrumb = styled.div`
   display: flex;
   align-items: center;
   gap: 8px;
-  font-size: 13px;
+  font-size: 14px;
   color: #666;
-  margin-bottom: 20px;
+  margin-bottom: 24px;
 `;
 
 const BreadcrumbLink = styled.a`
@@ -32,53 +39,83 @@ const BreadcrumbSeparator = styled.span`
 
 const GenderToggle = styled.div`
   display: flex;
-  border: 1px solid #212121;
+  border-radius: 4px;
+  overflow: hidden;
   width: fit-content;
-  margin-bottom: 30px;
+  margin-bottom: 40px;
 `;
 
 const GenderButton = styled.button`
-  padding: 12px 32px;
-  font-size: 14px;
+  padding: 14px 36px;
+  font-size: 15px;
   font-weight: 500;
   border: none;
   cursor: pointer;
   transition: all 0.2s;
-  background: ${(props) => (props.$active ? "#212121" : "#fff")};
+  background: ${(props) => (props.$active ? "#212121" : "#e8e8e8")};
   color: ${(props) => (props.$active ? "#fff" : "#212121")};
 
   &:hover {
-    background: ${(props) => (props.$active ? "#212121" : "#f5f5f5")};
+    background: ${(props) => (props.$active ? "#212121" : "#d5d5d5")};
   }
 `;
 
 const CategoryTabs = styled.div`
   display: flex;
   align-items: center;
-  gap: 0;
+  gap: 24px;
   margin-bottom: 20px;
+  flex-wrap: wrap;
 `;
 
-const CategoryTab = styled.button`
-  padding: 14px 24px;
+const ProductTypeWrapper = styled.div`
+  display: flex;
+  align-items: stretch;
+  border: 1px solid #e0e0e0;
+  border-radius: 4px;
+  background: #ffffffff;
+`;
+
+const ProductTypeSpace = styled.div`
+  width: 16px;
+`;
+
+const ProductTypeTab = styled.button`
+  padding: 14px 20px;
   font-size: 15px;
-  border: ${(props) => (props.$active ? "1px solid #212121" : "none")};
+  border: 1px solid #212121;
+  border-radius: 4px;
   background: #fff;
   color: #212121;
   cursor: pointer;
-  transition: all 0.2s;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
+  white-space: nowrap;
+  margin: -1px -1px -1px 0;
+`;
+
+const CategoryTab = styled.button`
+  padding: 14px 8px;
+  font-size: 15px;
+  border: none;
+  background: transparent;
+  color: ${(props) => (props.$active ? "#212121" : "#666")};
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  text-decoration: ${(props) => (props.$active ? "underline" : "none")};
+  text-underline-offset: 4px;
 
   &:hover {
-    text-decoration: ${(props) => (props.$active ? "none" : "underline")};
+    color: #212121;
   }
 `;
 
 const CloseIcon = styled.span`
   font-size: 18px;
   line-height: 1;
+  color: #666;
 `;
 
 const PageWrapper = styled.div`
@@ -93,20 +130,21 @@ const PageWrapper = styled.div`
 `;
 
 const PageHeader = styled.div`
-  margin-bottom: 30px;
+  margin-bottom: 40px;
 `;
 
 const PageTitle = styled.h1`
-  font-size: 40px;
+  font-size: 56px;
   font-weight: 700;
   color: #212121;
-  margin: 0 0 20px 0;
+  margin: 0 0 24px 0;
+  letter-spacing: -1px;
 `;
 
 const PageDescription = styled.p`
-  font-size: 18px;
+  font-size: 20px;
   color: #212121;
-  line-height: 1.7;
+  line-height: 1.6;
   max-width: 100%;
   margin: 0;
   font-weight: 400;
@@ -225,6 +263,7 @@ const ErrorText = styled.p`
   padding: 40px;
 `;
 
+// ============ 컴포넌트 시작 ============
 const MensShoes = () => {
   const [activeGender, setActiveGender] = useState("men");
   const [activeCategory, setActiveCategory] = useState("");
@@ -241,12 +280,12 @@ const MensShoes = () => {
   });
 
   const categories = [
-    { key: "all", label: "신발" },
     { key: "new", label: "신제품" },
     { key: "LIFESTYLE", label: "라이프스타일" },
     { key: "active", label: "액티브" },
     { key: "sale", label: "세일" },
     { key: "SLIPON", label: "슬립온" },
+    { key: "SLIPPER", label: "슬리퍼" },
   ];
 
   const sortOptions = [
@@ -257,11 +296,37 @@ const MensShoes = () => {
     { key: "newest", label: "최신 등록 순" },
   ];
 
+  // 필터 변경 시 API 호출 (백엔드 필터링)
   useEffect(() => {
     const fetchProducts = async () => {
       try {
         setLoading(true);
-        const data = await getProducts();
+
+        // API 파라미터 빌드
+        const params = {};
+
+        // 카테고리 (new, LIFESTYLE, sale, SLIPON만 필터링)
+        if (
+          activeCategory &&
+          ["new", "LIFESTYLE", "sale", "SLIPON"].includes(activeCategory)
+        ) {
+          params.category = activeCategory;
+        }
+
+        // 사이즈
+        if (filters.sizes.length > 0) {
+          params.size = filters.sizes.join(",");
+        }
+
+        // 소재 (프론트 이름 → API 값 변환)
+        if (filters.materials.length > 0) {
+          const mappedMaterials = filters.materials.map(
+            (m) => MATERIAL_MAP[m] || m
+          );
+          params.material = mappedMaterials.join(",");
+        }
+
+        const data = await getProducts(params);
         setProducts(transformProducts(data));
       } catch (err) {
         setError(err.message);
@@ -271,50 +336,12 @@ const MensShoes = () => {
     };
 
     fetchProducts();
-  }, []);
+  }, [activeCategory, filters]);
 
-  // 필터링 + 정렬 적용
-  const filteredAndSortedProducts = useMemo(() => {
-    let result = [...products];
+  // 정렬만 프론트에서 처리
+  const sortedProducts = useMemo(() => {
+    const result = [...products];
 
-    // 카테고리 필터링
-    if (activeCategory && activeCategory !== "all") {
-      if (activeCategory === "new") {
-        // 신제품: 등록일 기준 1달 이내
-        const oneMonthAgo = new Date();
-        oneMonthAgo.setMonth(oneMonthAgo.getMonth() - 1);
-        result = result.filter((p) => new Date(p.createdAt) >= oneMonthAgo);
-      } else if (activeCategory === "sale") {
-        // 세일: 할인율 > 0
-        result = result.filter((p) => p.originalPrice !== null);
-      } else {
-        // LIFESTYLE, SLIPON 등
-        result = result.filter((p) => p.categories?.includes(activeCategory));
-      }
-    }
-
-    // 사이즈 필터링 (OR)
-    if (filters.sizes.length > 0) {
-      result = result.filter((p) =>
-        filters.sizes.some((size) => p.availableSizes?.includes(parseInt(size)))
-      );
-    }
-
-    // 소재 필터링 (OR)
-    if (filters.materials.length > 0) {
-      result = result.filter((p) =>
-        filters.materials.some((material) => {
-          const materialMap = {
-            "부드럽고 따뜻한 Wool": "울",
-            "가볍고 시원한 Tree": "트리",
-          };
-          const mappedMaterial = materialMap[material] || material;
-          return p.materials?.includes(mappedMaterial);
-        })
-      );
-    }
-
-    // 정렬
     switch (sortBy) {
       case "sales":
         result.sort((a, b) => (b.salesCount || 0) - (a.salesCount || 0));
@@ -330,12 +357,11 @@ const MensShoes = () => {
         break;
       case "recommended":
       default:
-        // 기본 순서 유지
         break;
     }
 
     return result;
-  }, [products, activeCategory, filters, sortBy]);
+  }, [products, sortBy]);
 
   const handleFilterChange = (newFilters) => {
     setFilters(newFilters);
@@ -373,10 +399,11 @@ const MensShoes = () => {
 
   const currentSortLabel = sortOptions.find((o) => o.key === sortBy)?.label;
 
+  // ============ JSX 전부 그대로 유지 ============
   return (
     <PageWrapper>
       <Breadcrumb>
-        <BreadcrumbLink href="#">
+        <BreadcrumbLink href="/">
           <span>🏠</span> Home
         </BreadcrumbLink>
         <BreadcrumbSeparator>&gt;</BreadcrumbSeparator>
@@ -407,6 +434,13 @@ const MensShoes = () => {
       </PageHeader>
 
       <CategoryTabs>
+        <ProductTypeWrapper>
+          <ProductTypeSpace />
+          <ProductTypeTab>
+            신발
+            <CloseIcon>×</CloseIcon>
+          </ProductTypeTab>
+        </ProductTypeWrapper>
         {categories.map((category) => (
           <CategoryTab
             key={category.key}
@@ -414,7 +448,6 @@ const MensShoes = () => {
             onClick={() => handleCategoryClick(category.key)}
           >
             {category.label}
-            {activeCategory === category.key && <CloseIcon>×</CloseIcon>}
           </CategoryTab>
         ))}
       </CategoryTabs>
@@ -429,9 +462,7 @@ const MensShoes = () => {
         />
         <MainContent>
           <ContentHeader>
-            <ProductCount>
-              {filteredAndSortedProducts.length}개 제품
-            </ProductCount>
+            <ProductCount>{sortedProducts.length}개 제품</ProductCount>
             <SortDropdown>
               <SortButton onClick={() => setSortOpen(!sortOpen)}>
                 {currentSortLabel}
@@ -451,10 +482,10 @@ const MensShoes = () => {
               </SortMenu>
             </SortDropdown>
           </ContentHeader>
-          <ProductGrid products={filteredAndSortedProducts} />
+          <ProductGrid products={sortedProducts} />
         </MainContent>
       </PageContent>
-      <BottomBanner />
+      <Extra />
     </PageWrapper>
   );
 };

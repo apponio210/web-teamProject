@@ -1,35 +1,11 @@
 import { useState } from "react";
 import styled from "styled-components";
+import { useCart } from "../../context/useCart";
 
 const Container = styled.div`
   width: 100%;
-  background: #ffffffff;
+  background: #fff;
   padding: 40px;
-`;
-
-const Breadcrumb = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 24px;
-`;
-
-const BreadcrumbLink = styled.span`
-  color: #666;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  &:hover {
-    text-decoration: underline;
-  }
-`;
-
-const BreadcrumbSeparator = styled.span`
-  color: #999;
 `;
 
 const ProductName = styled.h1`
@@ -75,13 +51,6 @@ const Description = styled.p`
 
 const Section = styled.div`
   margin-bottom: 32px;
-`;
-
-const SectionHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
 `;
 
 const SectionLabel = styled.span`
@@ -131,13 +100,38 @@ const GenderButton = styled.button`
   font-size: 15px;
   font-weight: 500;
   border: none;
-  cursor: pointer;
+  cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
   transition: all 0.2s;
   background: ${(props) => (props.$active ? "#212121" : "transparent")};
-  color: ${(props) => (props.$active ? "#fff" : "#212121")};
+  color: ${(props) =>
+    props.$active ? "#fff" : props.$disabled ? "#ccc" : "#212121"};
 
   &:hover {
-    background: ${(props) => (props.$active ? "#212121" : "#e8e8e8")};
+    background: ${(props) =>
+      props.$disabled ? "transparent" : props.$active ? "#212121" : "#e8e8e8"};
+  }
+`;
+
+const SizeHeader = styled.div`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+`;
+
+const StockBadge = styled.span`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: #666;
+
+  &::before {
+    content: "";
+    width: 8px;
+    height: 8px;
+    background: #4caf50;
+    border-radius: 50%;
   }
 `;
 
@@ -185,183 +179,39 @@ const SizeButton = styled.button`
   `}
 `;
 
-const Divider = styled.hr`
-  border: none;
-  border-top: 2px solid #000000ff;
-  margin: 36px 0;
-`;
-
-const NaverPaySection = styled.div`
-  margin-bottom: 16px;
-`;
-
-const NaverPayLabel = styled.div`
-  font-size: 14px;
-  color: #666;
-  margin-bottom: 12px;
-
-  span {
-    color: #03c75a;
-    font-weight: 700;
-  }
-`;
-
-const NaverPayButton = styled.button`
+const AddToCartButton = styled.button`
   width: 100%;
-  padding: 16px;
-  background: #03c75a;
+  padding: 18px;
+  background: #212121;
   color: #fff;
-  border: none;
-  border-radius: 4px;
   font-size: 16px;
   font-weight: 500;
+  border: none;
   cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  gap: 6px;
   transition: background 0.2s;
 
   &:hover {
-    background: #02b350;
+    background: #000;
+  }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
   }
 `;
 
-const NaverN = styled.span`
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 20px;
-  height: 20px;
-  background: #fff;
-  color: #03c75a;
-  font-weight: 700;
-  font-size: 12px;
-  border-radius: 4px;
-`;
-
-const NaverPayEventRow = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-top: 12px;
-  font-size: 13px;
-  padding-top: 12px;
-  border-top: 1px solid #e5e5e5;
-`;
-
-const NaverPayEventLink = styled.span`
-  color: #212121;
-  cursor: pointer;
-
-  span {
-    color: #03c75a;
-  }
-`;
-
-const NaverPayArrows = styled.div`
-  display: flex;
-  gap: 0;
-
-  button {
-    width: 24px;
-    height: 24px;
-    border: 1px solid #ddd;
-    background: #fff;
-    cursor: pointer;
-    font-size: 12px;
-    color: #999;
-
-    &:first-child {
-      border-right: none;
-    }
-
-    &:hover {
-      background: #f5f5f5;
-    }
-  }
-`;
-
-const FitGuideSection = styled.div`
-  margin-top: 32px;
-  padding-top: 24px;
-`;
-
-const FitGuideHeader = styled.div`
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-`;
-
-const FitGuideTitle = styled.span`
-  font-size: 15px;
-  font-weight: 600;
-  color: #212121;
-`;
-
-const FitGuideLink = styled.span`
-  font-size: 14px;
-  color: #212121;
-  cursor: pointer;
-  text-decoration: underline;
-
-  &:hover {
-    color: #666;
-  }
-`;
-
-const FitGuideBarWrapper = styled.div`
-  position: relative;
-`;
-
-const FitGuideBars = styled.div`
-  display: flex;
-  gap: 4px;
-  margin-bottom: 8px;
-`;
-
-const FitGuideBar = styled.div`
-  flex: 1;
-  height: 4px;
-  background: ${(props) => (props.$filled ? "#03c75a" : "#e5e5e5")};
-`;
-
-const FitGuideLabels = styled.div`
-  display: flex;
-  justify-content: space-between;
-`;
-
-const FitGuideLabel = styled.span`
-  font-size: 13px;
-  color: #666;
-`;
-
-const StoreStockSection = styled.div`
-  margin-top: 24px;
-`;
-
-const StoreStockTitle = styled.div`
-  font-size: 15px;
-  font-weight: 600;
-  color: #212121;
-  cursor: pointer;
-  margin-bottom: 8px;
-`;
-
-const StoreStockDesc = styled.p`
-  font-size: 13px;
-  color: #666;
-  margin: 0;
-`;
-
-const ProductInfo = ({ product = {} }) => {
-  const [selectedImageIndex, setSelectedImageIndex] = useState(0);
+const ProductInfo = ({
+  product = {},
+  selectedImageIndex = 0,
+  onImageSelect,
+}) => {
   const [selectedGender, setSelectedGender] = useState("men");
   const [selectedSize, setSelectedSize] = useState(null);
+  const { addToCart } = useCart();
 
   const allSizes = [
-    250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305, 310,
+    220, 230, 240, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305,
+    310, 315, 320,
   ];
   const sizes = allSizes.map((size) => ({
     size,
@@ -374,14 +224,14 @@ const ProductInfo = ({ product = {} }) => {
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
 
+  const handleAddToCart = () => {
+    if (selectedSize && product) {
+      addToCart(product, selectedSize);
+    }
+  };
+
   return (
     <Container>
-      <Breadcrumb>
-        <BreadcrumbLink>🏠 Home</BreadcrumbLink>
-        <BreadcrumbSeparator>›</BreadcrumbSeparator>
-        <span>{product.name}</span>
-      </Breadcrumb>
-
       <ProductName>{product.name}</ProductName>
 
       <PriceWrapper>
@@ -396,15 +246,12 @@ const ProductInfo = ({ product = {} }) => {
 
       {product.images && product.images.length > 1 && (
         <Section>
-          <SectionHeader>
-            <SectionLabel>색상</SectionLabel>
-          </SectionHeader>
           <ColorGrid>
             {product.images.map((image, index) => (
               <ColorButton
                 key={index}
                 $active={selectedImageIndex === index}
-                onClick={() => setSelectedImageIndex(index)}
+                onClick={() => onImageSelect(index)}
               >
                 <img src={image} alt={`옵션 ${index + 1}`} />
               </ColorButton>
@@ -420,78 +267,35 @@ const ProductInfo = ({ product = {} }) => {
         >
           남성
         </GenderButton>
-        <GenderButton
-          $active={selectedGender === "women"}
-          onClick={() => setSelectedGender("women")}
-        >
+        <GenderButton $active={selectedGender === "women"} $disabled={true}>
           여성
         </GenderButton>
       </GenderToggle>
 
       <Section>
-        <SectionLabel>사이즈</SectionLabel>
-        <div style={{ marginTop: "16px" }}>
-          <SizeGrid>
-            {sizes.map((item) => (
-              <SizeButton
-                key={item.size}
-                $active={selectedSize === item.size}
-                $disabled={!item.available}
-                onClick={() => item.available && setSelectedSize(item.size)}
-              >
-                {item.size}
-              </SizeButton>
-            ))}
-          </SizeGrid>
-        </div>
+        <SizeHeader>
+          <SectionLabel>사이즈</SectionLabel>
+          <StockBadge>재고 있음</StockBadge>
+        </SizeHeader>
+        <SizeGrid>
+          {sizes.map((item) => (
+            <SizeButton
+              key={item.size}
+              $active={selectedSize === item.size}
+              $disabled={!item.available}
+              onClick={() => item.available && setSelectedSize(item.size)}
+            >
+              {item.size}
+            </SizeButton>
+          ))}
+        </SizeGrid>
       </Section>
 
-      <Divider />
-
-      <NaverPaySection>
-        <NaverPayLabel>
-          <span>NAVER</span>네이버ID로 간편구매
-        </NaverPayLabel>
-        <NaverPayButton>
-          <NaverN>N</NaverN>
-          <span>pay 구매</span>
-        </NaverPayButton>
-        <NaverPayEventRow>
-          <NaverPayEventLink>
-            <span>이벤트</span> 네이버페이
-          </NaverPayEventLink>
-          <NaverPayArrows>
-            <button>‹</button>
-            <button>›</button>
-          </NaverPayArrows>
-        </NaverPayEventRow>
-      </NaverPaySection>
-
-      <FitGuideSection>
-        <FitGuideHeader>
-          <FitGuideTitle>핏 가이드</FitGuideTitle>
-          <FitGuideLink>자세한 가이드</FitGuideLink>
-        </FitGuideHeader>
-        <FitGuideBarWrapper>
-          <FitGuideBars>
-            <FitGuideBar $filled />
-            <FitGuideBar $filled />
-            <FitGuideBar />
-          </FitGuideBars>
-          <FitGuideLabels>
-            <FitGuideLabel>작게나옴</FitGuideLabel>
-            <FitGuideLabel>정사이즈</FitGuideLabel>
-            <FitGuideLabel>크게나옴</FitGuideLabel>
-          </FitGuideLabels>
-        </FitGuideBarWrapper>
-      </FitGuideSection>
-
-      <StoreStockSection>
-        <StoreStockTitle>오프라인 매장 재고 확인</StoreStockTitle>
-        <StoreStockDesc>
-          사이즈를 선택하시면 재고가 있는 매장을 확인할 수 있습니다.
-        </StoreStockDesc>
-      </StoreStockSection>
+      {selectedSize && (
+        <AddToCartButton onClick={handleAddToCart}>
+          장바구니 담기 · {formatPrice(product.price)}
+        </AddToCartButton>
+      )}
     </Container>
   );
 };

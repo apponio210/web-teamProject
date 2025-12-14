@@ -14,8 +14,12 @@ export const addToCart = async (productId, size, quantity = 1) => {
   return response.data;
 };
 
-export const updateCartItem = async (itemId, quantity) => {
-  const response = await api.patch("/api/cart/item", { itemId, quantity });
+export const updateCartItem = async (productId, size, quantity) => {
+  const response = await api.patch("/api/cart/item", {
+    productId,
+    size,
+    quantity,
+  });
   return response.data;
 };
 
