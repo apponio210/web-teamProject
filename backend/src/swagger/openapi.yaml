@@ -446,6 +446,37 @@ paths:
   # =========================
   # Products
   # =========================
+  /api/products/category/{category}:
+    get:
+      tags: [Products]
+      summary: 카테고리별 상품 조회
+      description: |
+        특정 카테고리에 속한 상품 목록을 조회합니다.
+        - categories 필드는 배열이며, 해당 값이 포함된 상품을 반환합니다.
+        - 대소문자는 서버에서 자동으로 대문자로 정규화됩니다.
+      parameters:
+        - name: category
+          in: path
+          required: true
+          schema:
+            type: string
+            enum: [SLIPON, LIFESTYLE]
+          example: SLIPON
+      responses:
+        "200":
+          description: 카테고리에 해당하는 상품 배열
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Product"
+        "500":
+          description: 서버 오류(카테고리별 상품 조회 실패)
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
   /api/products:
     get:
       tags: [Products]

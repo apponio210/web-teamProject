@@ -6,6 +6,29 @@ const Review = require("../models/Review");
 
 const router = express.Router();
 
+// ✅ 카테고리별 상품 조회
+// GET /api/products/category/SLIPON
+// GET /api/products/category/LIFESTYLE
+router.get("/category/:category", async (req, res) => {
+    try {
+        const { category } = req.params;
+
+        // 저장된 값이 대문자("SLIPON")라면 통일해서 검색
+        const normalized = String(category).trim().toUpperCase();
+
+        const products = await Product.find({
+            categories: normalized // 배열에 포함되면 매칭됨
+        })
+            .sort({ createdAt: -1 }) // 최신순(원하면 변경)
+            .lean();
+
+        res.json(products);
+    } catch (err) {
+        console.error("GET /api/products/category/:category error:", err);
+        res.status(500).json({ message: "카테고리별 상품 조회 실패" });
+    }
+});
+
 // 전체 상품 목록
 // 전체 상품 목록 (필터링 지원)
 router.get("/", async (req, res) => {

@@ -120,12 +120,6 @@ const Bg = styled.img`
 const Overlay = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(
-    to right,
-    rgba(0, 0, 0, 0.2) 0%,
-    rgba(0, 0, 0, 0.05) 55%,
-    rgba(0, 0, 0, 0.35) 100%
-  );
 `;
 
 const TextBox = styled.div`
