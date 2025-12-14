@@ -5,9 +5,9 @@ import styled from "styled-components";
 export default function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [hideTop, setHideTop] = useState(false);
-
-  // ✅ MegaMenu 열릴 때 컬럼 글자 애니메이션(왼→오 순서)
   const [animateOn, setAnimateOn] = useState(false);
+
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const openMega = () => {
     setMegaOpen(true);
@@ -17,6 +17,23 @@ export default function Header() {
     setMegaOpen(false);
     setAnimateOn(false);
   };
+
+  useEffect(() => {
+    const sync = () => {
+      const u = localStorage.getItem("user");
+      setIsLoggedIn(!!u);
+    };
+
+    sync(); // 최초 1회
+
+    // 다른 탭/창에서 로그인/로그아웃해도 반영
+    window.addEventListener("storage", sync);
+    return () => window.removeEventListener("storage", sync);
+  }, []);
+
+  // ✅ 로그인 여부에 따른 링크
+  const accountHref = isLoggedIn ? "/mypage" : "/login";
+  const cartHref = isLoggedIn ? "/cart" : "/login";
 
   // ✅ 스크롤 시 TopBar 숨기기
   useEffect(() => {
@@ -90,7 +107,7 @@ export default function Header() {
           </Center>
 
           <Right>
-            <IconBtn aria-label="search" href="/search" title="검색">
+            <IconBtn aria-label="search" title="검색">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                 <path
                   d="M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"
@@ -106,7 +123,7 @@ export default function Header() {
               </svg>
             </IconBtn>
 
-            <IconBtn aria-label="account" href="/login" title="계정">
+            <IconBtn aria-label="account" href={accountHref} title="계정">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                 <path
                   d="M12 12a4.25 4.25 0 1 0-4.25-4.25A4.25 4.25 0 0 0 12 12Z"
@@ -122,7 +139,7 @@ export default function Header() {
               </svg>
             </IconBtn>
 
-            <IconBtn aria-label="cart" href="/cart" title="장바구니">
+            <IconBtn aria-label="cart" href={cartHref} title="장바구니">
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                 <path
                   d="M6 7h15l-1.5 8.5a2 2 0 0 1-2 1.5H9a2 2 0 0 1-2-1.5L5.5 4H3"

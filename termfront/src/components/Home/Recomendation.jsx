@@ -39,7 +39,6 @@ export default function Recommendation() {
                 <Img src={it.img} alt={it.title} />
               </Thumb>
 
-              {/* ✅ 2번 이미지처럼: 이미지 아래가 연한 회색 박스 */}
               <CardBody>
                 <Name>{it.title}</Name>
                 <Desc>{it.desc}</Desc>
