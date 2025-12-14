@@ -10,6 +10,48 @@ const sizeStockSchema = new mongoose.Schema(
     { _id: false }
 );
 
+// ✅ 상세 정보(아코디언에 들어가는 텍스트들)
+const productDetailSchema = new mongoose.Schema(
+    {
+        description: { type: String, trim: true }, // "상세 정보" 본문
+        usages: [{ type: String, trim: true }], // "용도" 리스트
+        temperatureControl: { type: String, trim: true }, // "체온 조절"
+        design: { type: String, trim: true }, // "디자인"
+        madeIn: [{ type: String, trim: true }], // "제조국"
+    },
+    { _id: false }
+);
+
+// ✅ 지속 가능성 섹션
+const sustainabilitySchema = new mongoose.Schema(
+    {
+        carbonFootprintKgCO2e: { type: Number, min: 0 }, // 4.99 같은 값
+        description: { type: String, trim: true }, // 문단
+        sustainableMaterials: [{ type: String, trim: true }], // 소재 리스트
+    },
+    { _id: false }
+);
+
+// ✅ 세탁/취급 주의사항 섹션
+const careSchema = new mongoose.Schema(
+    {
+        instructions: [{ type: String, trim: true }], // 안내 문장 리스트
+        tips: [{ type: String, trim: true }], // 팁 문장 리스트
+    },
+    { _id: false }
+);
+
+// ✅ 배송/반품 섹션
+const shippingReturnSchema = new mongoose.Schema(
+    {
+        description: { type: String, trim: true },
+        memberPolicy: { type: String, trim: true },
+        nonMemberPolicy: { type: String, trim: true },
+        returnPolicy: { type: String, trim: true },
+        exchangePolicy: { type: String, trim: true },
+    },
+    { _id: false }
+);
 const productSchema = new mongoose.Schema(
     {
         name: { type: String, required: true },            // 제품명
@@ -39,7 +81,13 @@ const productSchema = new mongoose.Schema(
         materials: [String],                               // 소재 태그 (예: "Tree", "Wool"...)
         saleStart: { type: Date },                         // 세일 시작일
         saleEnd: { type: Date },                           // 세일 종료일
-        salesCount: { type: Number, default: 0 }           // 누적 판매 수량 (판매현황용)
+        salesCount: { type: Number, default: 0 },           // 누적 판매 수량 (판매현황용)
+
+        // ✅ 사이트의 아코디언 섹션들 저장
+        details: { type: productDetailSchema, default: {} },
+        sustainability: { type: sustainabilitySchema, default: {} },
+        care: { type: careSchema, default: {} },
+        shippingReturn: { type: shippingReturnSchema, default: {} },
     },
     { timestamps: true } // createdAt 으로 신제품 구분
 );

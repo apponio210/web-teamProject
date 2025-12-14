@@ -192,7 +192,72 @@ components:
         updatedAt:
           type: string
           format: date-time
+        details:
+          type: object
+          properties:
+            description:
+              type: string
+              nullable: true
+            usages:
+              type: array
+              items:
+                type: string
+            temperatureControl:
+              type: string
+              nullable: true
+            design:
+              type: string
+              nullable: true
+            madeIn:
+              type: array
+              items:
+                type: string
 
+        sustainability:
+          type: object
+          properties:
+            carbonFootprintKgCO2e:
+              type: number
+              nullable: true
+              example: 4.99
+            description:
+              type: string
+              nullable: true
+            sustainableMaterials:
+              type: array
+              items:
+                type: string
+
+        care:
+          type: object
+          properties:
+            instructions:
+              type: array
+              items:
+                type: string
+            tips:
+              type: array
+              items:
+                type: string
+
+        shippingReturn:
+          type: object
+          properties:
+            description:
+              type: string
+              nullable: true
+            memberPolicy:
+              type: string
+              nullable: true
+            nonMemberPolicy:
+              type: string
+              nullable: true
+            returnPolicy:
+              type: string
+              nullable: true
+            exchangePolicy:
+              type: string
+              nullable: true
     # ===== Review =====
     Review:
       type: object
