@@ -2,6 +2,7 @@
 const express = require("express");
 const path = require("path");
 const multer = require("multer");
+const mongoose = require("mongoose");
 const { requireAdmin } = require("../middleware/auth");
 const Product = require("../models/Product");
 const Order = require("../models/Order");
@@ -32,13 +33,79 @@ const upload = multer({
     limits: { fileSize: 5 * 1024 * 1024 } // 5MB
 });
 
+// -------------------------
+// helpers
+// -------------------------
+function parseCsvToStringArray(value) {
+    if (!value) return [];
+    return String(value)
+        .split(",")
+        .map((v) => v.trim())
+        .filter(Boolean);
+}
+
+function parseCsvToNumberArray(value) {
+    if (!value) return [];
+    return String(value)
+        .split(",")
+        .map((v) => Number(String(v).trim()))
+        .filter((n) => Number.isFinite(n));
+}
+
+// sizes 입력 형태 지원:
+// 1) "250:10,260:0,270:5"
+// 2) JSON 문자열 '[{"size":250,"stock":10},{"size":260,"stock":0}]'
+function parseSizes(value) {
+    if (!value) return [];
+
+    const raw = String(value).trim();
+
+    // JSON 문자열이면 우선 파싱 시도
+    if (raw.startsWith("[") || raw.startsWith("{")) {
+        try {
+            const parsed = JSON.parse(raw);
+            const arr = Array.isArray(parsed) ? parsed : [parsed];
+            return arr
+                .map((x) => ({
+                    size: Number(x.size),
+                    stock: Number(x.stock),
+                }))
+                .filter(
+                    (x) => Number.isFinite(x.size) && Number.isFinite(x.stock) && x.stock >= 0
+                );
+        } catch {
+            // fallback 아래로
+        }
+    }
+
+    // "250:10,260:0" 형태
+    return raw
+        .split(",")
+        .map((pair) => pair.trim())
+        .filter(Boolean)
+        .map((pair) => {
+            const [s, st] = pair.split(":").map((x) => x.trim());
+            return { size: Number(s), stock: Number(st) };
+        })
+        .filter(
+            (x) => Number.isFinite(x.size) && Number.isFinite(x.stock) && x.stock >= 0
+        );
+}
+
+// allSizes가 없으면 sizes에서 자동 생성
+function buildAllSizes(allSizesArr, sizesArr) {
+    if (allSizesArr && allSizesArr.length > 0) return Array.from(new Set(allSizesArr)).sort((a, b) => a - b);
+    const derived = (sizesArr || []).map((x) => x.size);
+    return Array.from(new Set(derived)).sort((a, b) => a - b);
+}
 
 // 상품 등록
 router.post("/products", requireAdmin, upload.array("images", 10), async (req, res) => {
     try {
         const {
             name,
-            shortDesc,
+            short,        // ✅ 간단 설명
+            shortDesc,    // ✅ 상세 설명
             images,
             categories,
             basePrice,
@@ -47,7 +114,9 @@ router.post("/products", requireAdmin, upload.array("images", 10), async (req, r
             gender,        // 🔥 추가
             materials,
             saleStart,
-            saleEnd
+            saleEnd,
+            allSizes,     // ✅ "250,260,270"
+            sizes,        // ✅ "250:10,260:0" 또는 JSON 문자열
         } = req.body;
 
         if (!name || !basePrice) {
@@ -78,20 +147,25 @@ router.post("/products", requireAdmin, upload.array("images", 10), async (req, r
             ? materials.split(",").map((m) => m.trim())
             : [];
 
+        const allSizesArr = buildAllSizes(parseCsvToNumberArray(allSizes), sizesArr);
+
         const discount = discountRate ? Number(discountRate) : 0;
 
         const product = await Product.create({
             name,
-            shortDesc,
+            short,
+            shortDesc: shortDesc || "",
             images: imagePaths,
             categories: categoriesArr,
             basePrice: Number(basePrice),
-            discountRate: discount,
+            discountRate: Number.isFinite(discount) ? discount : 0,
             availableSizes: sizesArr,
             gender, // enum: ['남성','여성','공용']
             materials: materialsArr,
             saleStart: saleStart || null,
-            saleEnd: saleEnd || null
+            saleEnd: saleEnd || null,
+            allSizes: allSizesArr,
+            sizes: sizesArr,
         });
 
         res.json(product);
@@ -104,15 +178,18 @@ router.post("/products", requireAdmin, upload.array("images", 10), async (req, r
 // 가용 사이즈 변경
 router.patch("/products/:id/sizes", requireAdmin, async (req, res) => {
     try {
-        const { availableSizes } = req.body;
+        const { allSizes, sizes } = req.body;
 
-        const sizesArr = availableSizes
-            ? availableSizes.split(",").map((s) => Number(s.trim()))
-            : [];
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "잘못된 상품 ID 형식입니다." });
+        }
+
+        const sizesArr = parseSizes(sizes);
+        const allSizesArr = buildAllSizes(parseCsvToNumberArray(allSizes), sizesArr);
 
         const product = await Product.findByIdAndUpdate(
             req.params.id,
-            { availableSizes: sizesArr },
+            { allSizes: allSizesArr, sizes: sizesArr },
             { new: true }
         );
 
@@ -123,7 +200,7 @@ router.patch("/products/:id/sizes", requireAdmin, async (req, res) => {
         res.json(product);
     } catch (err) {
         console.error("PATCH /api/admin/products/:id/sizes error:", err);
-        res.status(500).json({ message: "가용 사이즈 변경 실패" });
+        res.status(500).json({ message: "사이즈/재고 변경 실패" });
     }
 });
 
