@@ -18,4 +18,15 @@ function App() {
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Routes>
+        <Route element={<RootLayout />}>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
+      </Routes>
+    </BrowserRouter>
+  );
+}
