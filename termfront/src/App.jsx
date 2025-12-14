@@ -1,19 +1,18 @@
-// src/App.jsx
 import React from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+
+import RootLayout from "./layouts/RootLayout";
 import MainPage from "./pages/MainPage";
+import LoginPage from "./pages/LoginPage";
 
 export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<MainPage />} />
-
-        {/* TODO: 나중에 페이지 생기면 추가 */}
-        {/* <Route path="/products/:id" element={<ProductDetailPage />} /> */}
-        {/* <Route path="/cart" element={<CartPage />} /> */}
-        {/* <Route path="/login" element={<LoginPage />} /> */}
-        {/* <Route path="*" element={<NotFound />} /> */}
+        <Route element={<RootLayout />}>
+          <Route path="/" element={<MainPage />} />
+          <Route path="/login" element={<LoginPage />} />
+        </Route>
       </Routes>
     </BrowserRouter>
   );
