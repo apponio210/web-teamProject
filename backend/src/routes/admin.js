@@ -204,7 +204,12 @@ router.post("/products", requireAdmin, upload.array("images", 10), async (req, r
             ? materials.split(",").map((m) => m.trim())
             : [];
 
-        const allSizesArr = buildAllSizes(parseCsvToNumberArray(allSizes), sizesArr);
+        const sizesObjArr = parseSizes(sizes);
+        // allSizes 없으면 sizes에서 자동 생성
+        const allSizesArr = buildAllSizes(parseCsvToNumberArray(allSizes), sizesObjArr);
+
+        // (선택) availableSizes는 쓰고 싶으면 derived로 만들기
+        const availableSizesArr = sizesObjArr.map(x => x.size);
 
         const discount = discountRate ? Number(discountRate) : 0;
 
@@ -221,8 +226,10 @@ router.post("/products", requireAdmin, upload.array("images", 10), async (req, r
             materials: materialsArr,
             saleStart: saleStart || null,
             saleEnd: saleEnd || null,
+            // ✅ 핵심
             allSizes: allSizesArr,
-            sizes: sizesArr,
+            availableSizes: availableSizesArr,   // 필요하면
+            sizes: sizesObjArr,                  // ✅ 재고 포함 저장
 
 
             // ✅ 등록 시 공통 내용 자동 주입
@@ -337,5 +344,36 @@ router.get("/sales", requireAdmin, async (req, res) => {
         res.status(500).json({ message: "판매 현황 조회 실패" });
     }
 });
+// =========================
+// 목록 설명(short) 변경
+// PATCH /api/admin/products/:id/short
+// =========================
+router.patch("/products/:id/short", requireAdmin, async (req, res) => {
+    try {
+        const { short } = req.body;
 
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({ message: "잘못된 상품 ID 형식입니다." });
+        }
+
+        if (!short || !String(short).trim()) {
+            return res.status(400).json({ message: "short는 필수입니다." });
+        }
+
+        const product = await Product.findByIdAndUpdate(
+            req.params.id,
+            { short: String(short).trim() },
+            { new: true, runValidators: true }
+        );
+
+        if (!product) {
+            return res.status(404).json({ message: "상품을 찾을 수 없습니다." });
+        }
+
+        res.json(product);
+    } catch (err) {
+        console.error("PATCH /api/admin/products/:id/short error:", err);
+        res.status(500).json({ message: "목록 설명 수정 실패" });
+    }
+});
 module.exports = router;

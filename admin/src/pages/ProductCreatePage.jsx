@@ -13,16 +13,19 @@ export default function ProductCreatePage() {
 
   // ===== 기본정보 =====
   const [name, setName] = useState("");
+  const [short, setShort] = useState(""); 
   const [shortDesc, setShortDesc] = useState("");
   const [basePrice, setBasePrice] = useState("");
   const [categories, setCategories] = useState(""); // "LIFESTYLE,SLIPON"
   const [gender, setGender] = useState("공용");
   const [materials, setMaterials] = useState(""); // "울,트리"
 
-  // ===== 가용사이즈(상세페이지와 동일한 UI) =====
-  const [selectedSizes, setSelectedSizes] = useState([]);
+  // ===== ✅ 사이즈/재고(백엔드 sizes에 맞춤) =====
+  // sizes: [{ size: 250, stock: 10 }, ...]
+  const [sizes, setSizes] = useState([]);
+  const [bulkQty, setBulkQty] = useState("");
 
-  // ===== 할인정책(상세페이지와 동일한 UI) =====
+  // ===== 할인정책 =====
   const [discountRate, setDiscountRate] = useState(0);
   const [saleStart, setSaleStart] = useState("");
   const [saleEnd, setSaleEnd] = useState("");
@@ -38,24 +41,51 @@ export default function ProductCreatePage() {
     return Math.round(bp * (1 - rate / 100));
   }, [basePrice, discountRate]);
 
+  // ---------- sizes helpers ----------
+  const hasSize = (size) => sizes.some((x) => x.size === size);
+
+  const getStock = (size) => {
+    const it = sizes.find((x) => x.size === size);
+    return Number(it?.stock ?? 0);
+  };
+
   const toggleSize = (size) => {
-    setSelectedSizes((prev) => {
-      const has = prev.includes(size);
-      const next = has ? prev.filter((s) => s !== size) : [...prev, size];
-      next.sort((a, b) => a - b);
-      return next;
+    setSizes((prev) => {
+      const exists = prev.some((x) => x.size === size);
+      if (exists) {
+        return prev.filter((x) => x.size !== size);
+      }
+      return [...prev, { size, stock: 0 }].sort((a, b) => a.size - b.size);
     });
   };
 
+  const setStock = (size, value) => {
+    const n = clampInt(value, 0, 999999);
+    setSizes((prev) =>
+      prev.map((x) => (x.size === size ? { ...x, stock: n } : x))
+    );
+  };
+
+  const applyBulkQty = () => {
+    const n = clampInt(bulkQty, 0, 999999);
+    setSizes((prev) => prev.map((x) => ({ ...x, stock: n })));
+  };
+
+  const markSoldOut = () => {
+    setSizes((prev) => prev.map((x) => ({ ...x, stock: 0 })));
+  };
+
+  const selectedSizes = useMemo(() => {
+    return sizes.map((x) => x.size).sort((a, b) => a - b);
+  }, [sizes]);
+
+  // ---------- file handlers ----------
   const onPickFiles = (e) => {
     const picked = Array.from(e.target.files || []);
     if (picked.length === 0) return;
 
     // 최대 10장 제한
-    setFiles((prev) => {
-      const merged = [...prev, ...picked].slice(0, 10);
-      return merged;
-    });
+    setFiles((prev) => [...prev, ...picked].slice(0, 10));
 
     // 같은 파일 다시 선택 가능하게
     e.target.value = "";
@@ -65,21 +95,24 @@ export default function ProductCreatePage() {
     setFiles((prev) => prev.filter((_, i) => i !== idx));
   };
 
+  // ---------- submit ----------
   const onSubmit = async () => {
     setMsg("");
 
-    // 간단 검증
     if (!name.trim()) return setMsg("❌ 상품명은 필수입니다.");
     if (!basePrice || Number(basePrice) <= 0)
       return setMsg("❌ 가격(basePrice)은 0보다 커야 합니다.");
     if (files.length === 0)
       return setMsg("❌ 이미지는 최소 1장 업로드해야 합니다.");
+    if (sizes.length === 0)
+      return setMsg("❌ 사이즈를 최소 1개 이상 선택해야 합니다.");
 
     try {
       setSubmitting(true);
 
       const fd = new FormData();
       fd.append("name", name.trim());
+      fd.append("short", short.trim());
       if (shortDesc.trim()) fd.append("shortDesc", shortDesc.trim());
 
       fd.append("basePrice", String(Number(basePrice)));
@@ -87,13 +120,25 @@ export default function ProductCreatePage() {
       // swagger가 string(csv)로 받는 형태
       if (categories.trim()) fd.append("categories", normalizeCsv(categories));
       if (materials.trim()) fd.append("materials", normalizeCsv(materials));
-
       if (gender.trim()) fd.append("gender", gender);
 
-      // 가용사이즈: "250,255,260"
-      if (selectedSizes.length > 0) {
-        fd.append("availableSizes", selectedSizes.join(","));
-      }
+      // ✅ 백엔드에 맞게: sizes = "250:10,260:0"
+      const sizesStr = sizes
+        .slice()
+        .sort((a, b) => a.size - b.size)
+        .map((x) => `${Number(x.size)}:${Number(x.stock ?? 0)}`)
+        .join(",");
+      fd.append("sizes", sizesStr);
+
+      // ✅ allSizes는 선택이지만 보내면 명시적으로 저장됨: "250,260"
+      const allSizesCsv = sizes
+        .slice()
+        .sort((a, b) => a.size - b.size)
+        .map((x) => Number(x.size))
+        .join(",");
+      fd.append("allSizes", allSizesCsv);
+
+      // ✅ availableSizes/sizeQty는 백엔드가 의미 있게 안 쓰므로 보내지 않음
 
       // 할인정책
       fd.append("discountRate", String(Number(discountRate || 0)));
@@ -106,7 +151,6 @@ export default function ProductCreatePage() {
       const created = await createProduct(fd);
 
       setMsg("✅ 등록 완료!");
-      // 등록 후 상세로 이동하거나 목록으로 이동 (원하는 UX로)
       nav(`/products/${created?._id || ""}`, { replace: true });
     } catch (e) {
       setMsg("❌ 등록 실패 (콘솔/네트워크 탭 확인)");
@@ -150,7 +194,15 @@ export default function ProductCreatePage() {
               할인가(미리보기):{" "}
               <b>₩{finalPricePreview.toLocaleString("ko-KR")}</b>
             </Hint>
-
+            {/* ✅ 여기 추가 */}
+            <Field>
+              <Label>목록설명(short) *</Label>
+              <Input
+                value={short}
+                onChange={(e) => setShort(e.target.value)}
+                placeholder="목록 카드에 표시될 한 줄 설명"
+              />
+            </Field>
             <Field>
               <Label>설명(shortDesc)</Label>
               <Textarea
@@ -224,27 +276,79 @@ export default function ProductCreatePage() {
           </Panel>
         </Left>
 
-        {/* 우측: 가용사이즈 + 할인정책 (상세페이지와 동일 틀) */}
+        {/* 우측: ✅ 사이즈/재고 + 할인정책 */}
         <Right>
           <Panel>
-            <PanelTitle>가용 사이즈</PanelTitle>
-            <HelpText>클릭해서 선택/해제 </HelpText>
+            <PanelTitle>사이즈 / 재고</PanelTitle>
+            <HelpText>사이즈 선택 후, 아래에서 재고를 입력하세요.</HelpText>
 
             <SizeGrid>
               {ALL_SIZES.map((size) => {
-                const active = selectedSizes.includes(size);
+                const active = hasSize(size);
+                const stock = active ? getStock(size) : 0;
                 return (
-                  <SizeBtn
+                  <SizeTile
                     key={size}
                     type="button"
                     onClick={() => toggleSize(size)}
                     $active={active}
+                    $soldout={active && stock <= 0}
                   >
-                    {size}
-                  </SizeBtn>
+                    <div className="size">{size}</div>
+                    {active ? (
+                      <div className="qty">
+                        {stock <= 0 ? "품절" : `재고 ${stock}`}
+                      </div>
+                    ) : (
+                      <div className="qty muted">미선택</div>
+                    )}
+                  </SizeTile>
                 );
               })}
             </SizeGrid>
+
+            <EditBox>
+              <EditTop>
+                <EditTitle>선택된 사이즈 재고</EditTitle>
+
+                <BulkRow>
+                  <BulkInput
+                    type="number"
+                    min="0"
+                    placeholder="일괄 수량"
+                    value={bulkQty}
+                    onChange={(e) => setBulkQty(e.target.value)}
+                  />
+                  <MiniBtn type="button" onClick={applyBulkQty}>
+                    일괄 적용
+                  </MiniBtn>
+                  <MiniBtn type="button" onClick={markSoldOut}>
+                    전부 품절(0)
+                  </MiniBtn>
+                </BulkRow>
+              </EditTop>
+
+              {selectedSizes.length === 0 ? (
+                <EmptyText>선택된 사이즈가 없습니다.</EmptyText>
+              ) : (
+                <EditList>
+                  {selectedSizes.map((size) => (
+                    <EditItem key={size}>
+                      <span className="label">{size}</span>
+                      <QtyInput
+                        type="number"
+                        min="0"
+                        value={getStock(size)}
+                        onChange={(e) => setStock(size, e.target.value)}
+                      />
+                      <span className="hint">
+                        {getStock(size) <= 0 ? "품절" : "정상"}
+                      </span>
+                    </EditItem>
+                  ))}
+                </EditList>
+              )}
+            </EditBox>
           </Panel>
 
           <Panel>
@@ -301,6 +405,12 @@ function normalizeCsv(text) {
     .map((s) => s.trim())
     .filter(Boolean)
     .join(",");
+}
+
+function clampInt(v, min, max) {
+  const n = Number(String(v ?? "").replace(/[^\d]/g, ""));
+  if (!Number.isFinite(n)) return min;
+  return Math.max(min, Math.min(max, n));
 }
 
 /** styles */
@@ -484,20 +594,133 @@ const SizeGrid = styled.div`
   }
 `;
 
-const SizeBtn = styled.button`
-  height: 46px;
+const SizeTile = styled.button`
+  height: 56px;
   border-radius: 0px;
   border: 1px solid ${(p) => (p.$active ? "#111" : "#ddd")};
   background: #fff;
-  color: #333;
-  font-weight: ${(p) => (p.$active ? 900 : 500)};
   cursor: pointer;
+  display: grid;
+  align-content: center;
+  gap: 4px;
+  padding: 6px 8px;
 
   ${(p) => p.$active && `box-shadow: inset 0 0 0 1px #111;`}
+  ${(p) => p.$soldout && `opacity: 0.9;`}
+
+  .size {
+    font-weight: ${(p) => (p.$active ? 900 : 600)};
+    color: #111;
+    line-height: 1;
+  }
+
+  .qty {
+    font-size: 12px;
+    color: ${(p) => (p.$active ? "#444" : "#777")};
+    line-height: 1;
+  }
+
+  .qty.muted {
+    opacity: 0.8;
+  }
 
   &:hover {
     border-color: #111;
   }
+`;
+
+const EditBox = styled.div`
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+`;
+
+const EditTop = styled.div`
+  display: grid;
+  gap: 10px;
+`;
+
+const EditTitle = styled.div`
+  font-weight: 900;
+  font-size: 13px;
+  color: #222;
+`;
+
+const BulkRow = styled.div`
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  flex-wrap: wrap;
+`;
+
+const BulkInput = styled.input`
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 0 10px;
+  width: 120px;
+  outline: none;
+
+  &:focus {
+    border-color: #111;
+  }
+`;
+
+const MiniBtn = styled.button`
+  height: 36px;
+  padding: 0 10px;
+  border: 1px solid #ddd;
+  background: #fff;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 800;
+
+  &:hover {
+    border-color: #111;
+  }
+`;
+
+const EditList = styled.div`
+  display: grid;
+  gap: 8px;
+`;
+
+const EditItem = styled.div`
+  display: grid;
+  grid-template-columns: 60px 1fr 60px;
+  gap: 10px;
+  align-items: center;
+
+  .label {
+    font-weight: 900;
+    color: #111;
+  }
+
+  .hint {
+    font-size: 12px;
+    color: #666;
+    text-align: right;
+  }
+`;
+
+const QtyInput = styled.input`
+  height: 36px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  padding: 0 10px;
+  outline: none;
+
+  &:focus {
+    border-color: #111;
+  }
+`;
+
+const EmptyText = styled.div`
+  font-size: 13px;
+  color: #777;
+  padding: 6px 0;
 `;
 
 const FooterBar = styled.div`
