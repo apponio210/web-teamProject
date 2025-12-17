@@ -4,3 +4,8 @@ export async function fetchMyOrders() {
   const res = await api.get("/api/orders/me");
   return res.data; // 배열
 }
+
+export const checkout = async () => {
+  const response = await api.post("/api/orders/checkout");
+  return response.data;
+};

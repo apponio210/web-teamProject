@@ -8,31 +8,31 @@ const router = express.Router();
 
 // 유저 Cart 가져오거나 새로 생성
 async function getOrCreateCart(userId) {
-    let cart = await Cart.findOne({ user: userId }).populate("items.product");
-    if (!cart) {
-        cart = await Cart.create({ user: userId, items: [] });
-        cart = await cart.populate("items.product");
-    }
-    return cart;
+  let cart = await Cart.findOne({ user: userId }).populate("items.product");
+  if (!cart) {
+    cart = await Cart.create({ user: userId, items: [] });
+    cart = await cart.populate("items.product");
+  }
+  return cart;
 }
 
 // unitPrice / lineTotal 재계산
 async function recalcCart(cart) {
-    cart = await cart.populate("items.product");
+  cart = await cart.populate("items.product");
 
-    cart.items.forEach((item) => {
-        const product = item.product;
-        const salePrice =
-            typeof product.getSalePrice === "function"
-                ? product.getSalePrice()
-                : product.basePrice;
+  cart.items.forEach((item) => {
+    const product = item.product;
+    const salePrice =
+      typeof product.getSalePrice === "function"
+        ? product.getSalePrice()
+        : product.basePrice;
 
-        item.unitPrice = salePrice;
-        item.lineTotal = salePrice * item.quantity;
-    });
+    item.unitPrice = salePrice;
+    item.lineTotal = salePrice * item.quantity;
+  });
 
-    await cart.save();
-    return cart;
+  await cart.save();
+  return cart;
 }
 
 // ✅ 상품 사이즈 재고 조회 헬퍼
@@ -51,14 +51,14 @@ async function getSizeStock(productId, sizeNum) {
 
 // 장바구니 조회
 router.get("/", requireAuth, async (req, res) => {
-    try {
-        const userId = req.session.user.id;
-        const cart = await getOrCreateCart(userId);
-        res.json(cart);
-    } catch (err) {
-        console.error("GET /api/cart error:", err);
-        res.status(500).json({ message: "장바구니 조회 실패" });
-    }
+  try {
+    const userId = req.session.user.id;
+    const cart = await getOrCreateCart(userId);
+    res.json(cart);
+  } catch (err) {
+    console.error("GET /api/cart error:", err);
+    res.status(500).json({ message: "장바구니 조회 실패" });
+  }
 });
 
 // 장바구니 담기
@@ -126,6 +126,35 @@ router.post("/add", requireAuth, async (req, res) => {
         console.error("POST /api/cart/add error:", err);
         res.status(500).json({ message: "장바구니 담기 실패" });
     }
+
+    let cart = await getOrCreateCart(userId);
+
+    const existing = cart.items.find((item) => {
+      const itemProductId = item.product?._id
+        ? item.product._id.toString()
+        : item.product.toString();
+      return itemProductId === productId.toString() && item.size === sizeNum;
+    });
+
+    if (existing) {
+      existing.quantity += qtyNum;
+    } else {
+      cart.items.push({
+        product: productId,
+        size: sizeNum,
+        quantity: qtyNum,
+        unitPrice: 0,
+        lineTotal: 0,
+      });
+    }
+
+    cart = await recalcCart(cart);
+
+    res.json(cart);
+  } catch (err) {
+    console.error("POST /api/cart/add error:", err);
+    res.status(500).json({ message: "장바구니 담기 실패" });
+  }
 });
 
 // 수량 변경
@@ -181,46 +210,62 @@ router.patch("/item", requireAuth, async (req, res) => {
         console.error("PATCH /api/cart/item error:", err);
         res.status(500).json({ message: "장바구니 수정 실패" });
     }
+
+    if (quantity <= 0) {
+      cart.items.splice(idx, 1);
+    } else {
+      cart.items[idx].quantity = Number(quantity);
+    }
+
+    cart = await recalcCart(cart);
+
+    res.json(cart);
+  } catch (err) {
+    console.error("PATCH /api/cart/item error:", err);
+    res.status(500).json({ message: "장바구니 수정 실패" });
+  }
 });
 
 // 장바구니 전체 비우기
 router.delete("/clear", requireAuth, async (req, res) => {
-    try {
-        const userId = req.session.user.id;
+  try {
+    const userId = req.session.user.id;
 
-        let cart = await getOrCreateCart(userId);
-        cart.items = [];
-        await cart.save();
+    let cart = await getOrCreateCart(userId);
+    cart.items = [];
+    await cart.save();
 
-        res.json(cart);
-    } catch (err) {
-        console.error("DELETE /api/cart/clear error:", err);
-        res.status(500).json({ message: "장바구니 비우기 실패" });
-    }
+    res.json(cart);
+  } catch (err) {
+    console.error("DELETE /api/cart/clear error:", err);
+    res.status(500).json({ message: "장바구니 비우기 실패" });
+  }
 });
 
 // 특정 아이템 삭제
 router.delete("/:itemId", requireAuth, async (req, res) => {
-    try {
-        const userId = req.session.user.id;
-        const { itemId } = req.params;
+  try {
+    const userId = req.session.user.id;
+    const { itemId } = req.params;
 
-        let cart = await getOrCreateCart(userId);
+    let cart = await getOrCreateCart(userId);
 
-        const beforeLen = cart.items.length;
-        cart.items = cart.items.filter((item) => item._id.toString() !== itemId);
+    const beforeLen = cart.items.length;
+    cart.items = cart.items.filter((item) => item._id.toString() !== itemId);
 
-        if (cart.items.length === beforeLen) {
-            return res.status(404).json({ message: "장바구니에 해당 아이템이 없습니다." });
-        }
-
-        cart = await recalcCart(cart);
-
-        res.json(cart);
-    } catch (err) {
-        console.error("DELETE /api/cart/item error:", err);
-        res.status(500).json({ message: "장바구니 항목 삭제 실패" });
+    if (cart.items.length === beforeLen) {
+      return res
+        .status(404)
+        .json({ message: "장바구니에 해당 아이템이 없습니다." });
     }
+
+    cart = await recalcCart(cart);
+
+    res.json(cart);
+  } catch (err) {
+    console.error("DELETE /api/cart/item error:", err);
+    res.status(500).json({ message: "장바구니 항목 삭제 실패" });
+  }
 });
 
 module.exports = router;

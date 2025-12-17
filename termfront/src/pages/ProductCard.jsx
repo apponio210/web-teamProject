@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
+import { useCart } from "../context/useCart";
 
 const CardWrapper = styled.div`
   position: relative;
@@ -49,33 +50,86 @@ const InfoBox = styled.div`
   padding: 14px 16px 16px;
 `;
 
+const ThumbnailWrapper = styled.div`
+  position: relative;
+  margin-bottom: 14px;
+`;
+
 const ThumbnailContainer = styled.div`
   display: flex;
-  gap: 8px;
-  margin-bottom: 14px;
+  gap: 6px;
   overflow-x: auto;
+  scroll-behavior: smooth;
 
   &::-webkit-scrollbar {
     display: none;
   }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 const Thumbnail = styled.button`
-  width: 56px;
-  height: 56px;
+  width: 44px;
+  height: 44px;
   padding: 0;
-  border: none;
-  border-bottom: ${(props) =>
-    props.$active ? "2px solid #212121" : "2px solid transparent"};
+  border: 2px solid transparent;
   background: #e8e8e8;
   cursor: pointer;
   flex-shrink: 0;
+  transition: border-color 0.2s;
+
+  ${(props) =>
+    props.$active &&
+    `
+    border-bottom-color: #212121;
+  `}
+
+  &:hover {
+    border-color: #212121;
+  }
 
   img {
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
+`;
+
+const ArrowButton = styled.button`
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 28px;
+  background: rgba(255, 255, 255, 0.85);
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  transition: background 0.2s;
+
+  &:hover {
+    background: rgba(255, 255, 255, 1);
+  }
+
+  ${(props) =>
+    props.$left &&
+    `
+    left: 0;
+  `}
+
+  ${(props) =>
+    props.$right &&
+    `
+    right: 0;
+  `}
+`;
+
+const ArrowIcon = styled.span`
+  font-size: 18px;
+  color: #212121;
+  line-height: 1;
 `;
 
 const ProductInfo = styled.div`
@@ -150,23 +204,82 @@ const SizeGrid = styled.div`
 `;
 
 const SizeButton = styled.button`
+  position: relative;
   padding: 10px 4px;
-  border: 1px solid ${(props) => (props.$disabled ? "#e5e5e5" : "#d0d0d0")};
+  border: 1px solid ${(props) => (props.$disabled ? "#e5e5e5" : "#212121")};
   background: ${(props) => (props.$disabled ? "#f5f5f5" : "white")};
   color: ${(props) => (props.$disabled ? "#ccc" : "#212121")};
   font-size: 13px;
   cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
   transition: all 0.2s;
-  text-decoration: ${(props) => (props.$disabled ? "line-through" : "none")};
+  overflow: hidden;
 
   &:hover {
+    background: ${(props) => (props.$disabled ? "#f5f5f5" : "#212121")};
+    color: ${(props) => (props.$disabled ? "#ccc" : "#fff")};
     border-color: ${(props) => (props.$disabled ? "#e5e5e5" : "#212121")};
   }
+
+  ${(props) =>
+    props.$disabled &&
+    `
+    &::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: linear-gradient(
+        to top left,
+        transparent calc(50% - 0.5px),
+        #ccc calc(50% - 0.5px),
+        #ccc calc(50% + 0.5px),
+        transparent calc(50% + 0.5px)
+      );
+      pointer-events: none;
+    }
+  `}
 `;
 
 const ProductCard = ({ product }) => {
   const navigate = useNavigate();
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
+  const { addToCart } = useCart();
+  const thumbnailRef = useRef(null);
+  const [canScrollLeft, setCanScrollLeft] = useState(false);
+  const [canScrollRight, setCanScrollRight] = useState(false);
+
+  const checkScroll = () => {
+    if (thumbnailRef.current) {
+      const { scrollLeft, scrollWidth, clientWidth } = thumbnailRef.current;
+      setCanScrollLeft(scrollLeft > 0);
+      setCanScrollRight(scrollLeft + clientWidth < scrollWidth - 1);
+    }
+  };
+
+  useEffect(() => {
+    checkScroll();
+    const container = thumbnailRef.current;
+    if (container) {
+      container.addEventListener("scroll", checkScroll);
+      window.addEventListener("resize", checkScroll);
+      return () => {
+        container.removeEventListener("scroll", checkScroll);
+        window.removeEventListener("resize", checkScroll);
+      };
+    }
+  }, [product.images]);
+
+  const scrollThumbnails = (direction) => {
+    if (thumbnailRef.current) {
+      const scrollAmount = 150;
+      thumbnailRef.current.scrollBy({
+        left: direction === "left" ? -scrollAmount : scrollAmount,
+        behavior: "smooth",
+      });
+    }
+  };
 
   const handleThumbnailClick = (e, index) => {
     e.stopPropagation();
@@ -179,7 +292,7 @@ const ProductCard = ({ product }) => {
 
   const handleSizeClick = (e, size) => {
     e.stopPropagation();
-    console.log(`장바구니에 추가: ${product.name} - ${size}`);
+    addToCart(product, size);
   };
 
   const discountRate = product.originalPrice
@@ -191,9 +304,11 @@ const ProductCard = ({ product }) => {
     310, 315, 320,
   ];
   const sizes = allSizes.map((size) => ({
-    size: size.toString(),
+    size,
     available: product.availableSizes?.includes(size) || false,
   }));
+
+  const hasMultipleImages = product.images && product.images.length > 1;
 
   return (
     <CardWrapper>
@@ -207,18 +322,44 @@ const ProductCard = ({ product }) => {
           </ImageContainer>
 
           <InfoBox>
-            {product.images && product.images.length > 1 && (
-              <ThumbnailContainer>
-                {product.images.map((img, index) => (
-                  <Thumbnail
-                    key={index}
-                    $active={currentImageIndex === index}
-                    onClick={(e) => handleThumbnailClick(e, index)}
+            {hasMultipleImages && (
+              <ThumbnailWrapper>
+                {canScrollLeft && (
+                  <ArrowButton
+                    $left
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      scrollThumbnails("left");
+                    }}
                   >
-                    <img src={img} alt={`${product.name} ${index + 1}`} />
-                  </Thumbnail>
-                ))}
-              </ThumbnailContainer>
+                    <ArrowIcon>‹</ArrowIcon>
+                  </ArrowButton>
+                )}
+
+                <ThumbnailContainer ref={thumbnailRef}>
+                  {product.images.map((img, index) => (
+                    <Thumbnail
+                      key={index}
+                      $active={currentImageIndex === index}
+                      onClick={(e) => handleThumbnailClick(e, index)}
+                    >
+                      <img src={img} alt={`${product.name} ${index + 1}`} />
+                    </Thumbnail>
+                  ))}
+                </ThumbnailContainer>
+
+                {canScrollRight && (
+                  <ArrowButton
+                    $right
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      scrollThumbnails("right");
+                    }}
+                  >
+                    <ArrowIcon>›</ArrowIcon>
+                  </ArrowButton>
+                )}
+              </ThumbnailWrapper>
             )}
 
             <ProductInfo onClick={goToDetail}>

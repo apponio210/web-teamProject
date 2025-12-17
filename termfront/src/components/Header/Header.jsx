@@ -1,13 +1,14 @@
-// src/components/Header/Header.jsx
 import React, { useEffect, useState } from "react";
 import styled from "styled-components";
+import { useCart } from "../../context/useCart";
 
 export default function Header() {
   const [megaOpen, setMegaOpen] = useState(false);
   const [hideTop, setHideTop] = useState(false);
   const [animateOn, setAnimateOn] = useState(false);
-
   const [isLoggedIn, setIsLoggedIn] = useState(false);
+
+  const { totalCount, openCart } = useCart();
 
   const openMega = () => {
     setMegaOpen(true);
@@ -24,18 +25,23 @@ export default function Header() {
       setIsLoggedIn(!!u);
     };
 
-    sync(); // 최초 1회
+    sync();
 
-    // 다른 탭/창에서 로그인/로그아웃해도 반영
     window.addEventListener("storage", sync);
     return () => window.removeEventListener("storage", sync);
   }, []);
 
-  // ✅ 로그인 여부에 따른 링크
   const accountHref = isLoggedIn ? "/mypage" : "/login";
-  const cartHref = isLoggedIn ? "/cart" : "/login";
 
-  // ✅ 스크롤 시 TopBar 숨기기
+  const handleCartClick = (e) => {
+    e.preventDefault();
+    if (isLoggedIn) {
+      openCart();
+    } else {
+      window.location.href = "/login";
+    }
+  };
+
   useEffect(() => {
     const onScroll = () => setHideTop(window.scrollY > 10);
     window.addEventListener("scroll", onScroll, { passive: true });
@@ -43,13 +49,11 @@ export default function Header() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // ✅ 헤더 높이를 CSS 변수로 내려줘서 main padding-top 맞추기
   useEffect(() => {
     const headerH = hideTop ? MAIN_H : TOP_H + MAIN_H;
     document.documentElement.style.setProperty("--header-h", `${headerH}px`);
   }, [hideTop]);
 
-  // ✅ 패널이 열릴 때 컬럼만 애니메이션 시작(transition 트리거)
   useEffect(() => {
     if (!megaOpen) return;
 
@@ -72,14 +76,12 @@ export default function Header() {
 
   return (
     <HeaderWrap>
-      {/* Top announcement bar */}
       <TopBar $hide={hideTop}>
         <TopBarInner $hide={hideTop}>
           세상에서 가장 편한 신발, 올버즈
         </TopBarInner>
       </TopBar>
 
-      {/* Main header */}
       <MainBar>
         <MainInner>
           <Left>
@@ -139,7 +141,11 @@ export default function Header() {
               </svg>
             </IconBtn>
 
-            <IconBtn aria-label="cart" href={cartHref} title="장바구니">
+            <CartIconBtn
+              aria-label="cart"
+              onClick={handleCartClick}
+              title="장바구니"
+            >
               <svg viewBox="0 0 24 24" width="18" height="18" fill="none">
                 <path
                   d="M6 7h15l-1.5 8.5a2 2 0 0 1-2 1.5H9a2 2 0 0 1-2-1.5L5.5 4H3"
@@ -153,15 +159,14 @@ export default function Header() {
                   fill="currentColor"
                 />
               </svg>
-            </IconBtn>
+              {totalCount > 0 && <CartBadge>{totalCount}</CartBadge>}
+            </CartIconBtn>
           </Right>
         </MainInner>
       </MainBar>
 
-      {/* Mega Menu */}
       {megaOpen && (
         <>
-          {/* 바깥으로 나가면 즉시 닫힘 */}
           <Backdrop $hideTop={hideTop} onMouseEnter={closeMega} />
 
           <MegaMenu $hideTop={hideTop} onMouseLeave={closeMega}>
@@ -211,15 +216,12 @@ export default function Header() {
   );
 }
 
-/* ===== constants ===== */
 const TOP_H = 40;
 const MAIN_H = 68;
 
-/* ✅ MegaTitle hover 작대기/밀림 세팅 */
-const TITLE_LINE = 26; // 작대기 길이
-const TITLE_GAP = 10; // 작대기와 텍스트 사이 간격
+const TITLE_LINE = 26;
+const TITLE_GAP = 10;
 
-/* ===== styles ===== */
 const HeaderWrap = styled.header`
   position: fixed;
   top: 0;
@@ -328,7 +330,36 @@ const IconBtn = styled.a`
   text-decoration: none;
 `;
 
-/* ===== Mega Menu ===== */
+const CartIconBtn = styled.button`
+  position: relative;
+  width: 34px;
+  height: 34px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  color: #111;
+  background: none;
+  border: none;
+  cursor: pointer;
+`;
+
+const CartBadge = styled.span`
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  background: #111;
+  color: #fff;
+  font-size: 10px;
+  font-weight: 600;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+`;
 
 const Backdrop = styled.div`
   position: fixed;
@@ -365,7 +396,6 @@ const MegaGrid = styled.div`
 `;
 
 const MegaCol = styled.div`
-  /* 컬럼 등장 애니메이션 */
   opacity: ${(p) => (p.$open ? 1 : 0)};
   transform: translateX(${(p) => (p.$open ? "0px" : "-18px")});
   transition: opacity 260ms ease, transform 260ms ease;
@@ -380,7 +410,6 @@ const MegaTitle = styled.div`
   margin-bottom: 18px;
   line-height: 1.2;
 
-  /* 텍스트(기본 위치는 그대로) */
   > span {
     display: inline-block;
     transform: translateX(0);
@@ -388,7 +417,6 @@ const MegaTitle = styled.div`
     will-change: transform;
   }
 
-  /* 왼쪽 가로 작대기 (hover 시 자라남) */
   &::before {
     content: "";
     position: absolute;
@@ -404,7 +432,6 @@ const MegaTitle = styled.div`
     will-change: transform;
   }
 
-  /* ✅ hover 시: 작대기 등장 + 텍스트 밀림 */
   &:hover::before {
     transform: translateY(-50%) scaleX(1);
   }

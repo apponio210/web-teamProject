@@ -1,6 +1,6 @@
-import { useState } from "react";
 import styled from "styled-components";
-import { writeReview } from "../../api/review";
+import { API_BASE_URL } from "../../api";
+
 const Container = styled.div`
   padding: 60px 0;
 `;
@@ -40,93 +40,6 @@ const ReviewCount = styled.p`
   margin: 0;
 `;
 
-const ReviewFormSection = styled.div`
-  background: #f9f9f9;
-  padding: 32px;
-  margin-bottom: 40px;
-  border-radius: 8px;
-`;
-
-const FormTitle = styled.h3`
-  font-size: 18px;
-  font-weight: 600;
-  color: #212121;
-  margin: 0 0 20px 0;
-`;
-
-const StarRatingInput = styled.div`
-  display: flex;
-  gap: 8px;
-  margin-bottom: 20px;
-`;
-
-const StarButton = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
-  font-size: 32px;
-  color: ${(props) => (props.$filled ? "#f5a623" : "#e5e5e5")};
-  transition: color 0.2s;
-  padding: 0;
-
-  &:hover {
-    color: #f5a623;
-  }
-`;
-
-const TextArea = styled.textarea`
-  width: 100%;
-  min-height: 120px;
-  padding: 16px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
-  line-height: 1.6;
-  resize: vertical;
-  margin-bottom: 16px;
-
-  &:focus {
-    outline: none;
-    border-color: #212121;
-  }
-
-  &::placeholder {
-    color: #999;
-  }
-`;
-
-const SubmitButton = styled.button`
-  padding: 14px 32px;
-  background: #212121;
-  color: #fff;
-  border: none;
-  font-size: 15px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: background 0.2s;
-
-  &:hover {
-    background: #000;
-  }
-
-  &:disabled {
-    background: #ccc;
-    cursor: not-allowed;
-  }
-`;
-
-const ErrorMessage = styled.p`
-  color: #c41e3a;
-  font-size: 14px;
-  margin: 0 0 16px 0;
-`;
-
-const SuccessMessage = styled.p`
-  color: #28a745;
-  font-size: 14px;
-  margin: 0 0 16px 0;
-`;
-
 const ReviewList = styled.div`
   display: flex;
   flex-direction: column;
@@ -136,8 +49,12 @@ const ReviewItem = styled.div`
   padding: 32px 0;
   border-bottom: 1px solid #e5e5e5;
   display: grid;
-  grid-template-columns: 120px 1fr 100px;
+  grid-template-columns: 120px 1fr 120px;
   gap: 24px;
+
+  &:last-child {
+    border-bottom: none;
+  }
 
   @media (max-width: 768px) {
     grid-template-columns: 1fr;
@@ -181,7 +98,18 @@ const ReviewText = styled.p`
   font-size: 14px;
   color: #666;
   line-height: 1.7;
-  margin: 0 0 16px 0;
+  margin: 0;
+`;
+
+const ReviewImage = styled.div`
+  margin-top: 12px;
+
+  img {
+    max-width: 200px;
+    max-height: 200px;
+    object-fit: cover;
+    border-radius: 4px;
+  }
 `;
 
 const ReviewDate = styled.span`
@@ -209,54 +137,17 @@ const renderStars = (rating, size = "large") => {
   return stars;
 };
 
-const ReviewSection = ({ productId, reviews = [], onReviewAdded }) => {
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
-  const [comment, setComment] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(false);
-
-  const handleSubmit = async () => {
-    if (rating === 0) {
-      setError("별점을 선택해주세요.");
-      return;
-    }
-    if (comment.trim() === "") {
-      setError("후기 내용을 입력해주세요.");
-      return;
-    }
-
-    try {
-      setLoading(true);
-      setError(null);
-      await writeReview(productId, rating, comment);
-      setSuccess(true);
-      setRating(0);
-      setComment("");
-
-      if (onReviewAdded) {
-        onReviewAdded();
-      }
-
-      setTimeout(() => setSuccess(false), 3000);
-    } catch (err) {
-      if (err.response?.status === 400) {
-        setError("구매 이력이 없거나 입력이 올바르지 않습니다.");
-      } else if (err.response?.status === 401) {
-        setError("로그인이 필요합니다.");
-      } else {
-        setError("후기 작성에 실패했습니다. 다시 시도해주세요.");
-      }
-    } finally {
-      setLoading(false);
-    }
-  };
-
+const ReviewSection = ({ reviews = [] }) => {
   const averageRating =
     reviews.length > 0
       ? reviews.reduce((acc, r) => acc + r.rating, 0) / reviews.length
       : 0;
+
+  const getImageUrl = (path) => {
+    if (!path) return null;
+    if (path.startsWith("http")) return path;
+    return `${API_BASE_URL}${path}`;
+  };
 
   return (
     <Container>
@@ -274,37 +165,6 @@ const ReviewSection = ({ productId, reviews = [], onReviewAdded }) => {
         </ReviewCount>
       </RatingSummary>
 
-      <ReviewFormSection>
-        <FormTitle>후기 작성</FormTitle>
-
-        <StarRatingInput>
-          {[1, 2, 3, 4, 5].map((star) => (
-            <StarButton
-              key={star}
-              $filled={star <= (hoverRating || rating)}
-              onMouseEnter={() => setHoverRating(star)}
-              onMouseLeave={() => setHoverRating(0)}
-              onClick={() => setRating(star)}
-            >
-              ★
-            </StarButton>
-          ))}
-        </StarRatingInput>
-
-        <TextArea
-          placeholder="상품에 대한 후기를 작성해주세요."
-          value={comment}
-          onChange={(e) => setComment(e.target.value)}
-        />
-
-        {error && <ErrorMessage>{error}</ErrorMessage>}
-        {success && <SuccessMessage>후기가 등록되었습니다!</SuccessMessage>}
-
-        <SubmitButton onClick={handleSubmit} disabled={loading}>
-          {loading ? "등록 중..." : "후기 등록"}
-        </SubmitButton>
-      </ReviewFormSection>
-
       {reviews.length === 0 ? (
         <NoReviews>첫 번째 리뷰를 작성해보세요!</NoReviews>
       ) : (
@@ -320,6 +180,11 @@ const ReviewSection = ({ productId, reviews = [], onReviewAdded }) => {
                   {review.title && <ReviewTitle>{review.title}</ReviewTitle>}
                 </ReviewHeader>
                 <ReviewText>{review.content}</ReviewText>
+                {review.image && (
+                  <ReviewImage>
+                    <img src={getImageUrl(review.image)} alt="리뷰 이미지" />
+                  </ReviewImage>
+                )}
               </ReviewContent>
               <ReviewDate>{review.date}</ReviewDate>
             </ReviewItem>

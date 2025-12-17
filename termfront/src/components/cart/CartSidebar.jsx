@@ -28,23 +28,22 @@ const Panel = styled.div`
 `;
 
 const Header = styled.div`
-  padding: 20px 24px;
-  border-bottom: 1px solid #e5e5e5;
-`;
-
-const HeaderTop = styled.div`
+  position: relative;
+  padding: 24px;
   display: flex;
-  justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  justify-content: center;
 `;
 
 const CloseButton = styled.button`
+  position: absolute;
+  left: 24px;
   background: none;
   border: none;
   cursor: pointer;
-  padding: 4px;
-  font-size: 24px;
+  padding: 0;
+  font-size: 32px;
+  font-weight: 300;
   color: #212121;
   line-height: 1;
 
@@ -53,33 +52,38 @@ const CloseButton = styled.button`
   }
 `;
 
-const CartIcon = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 4px;
-
-  svg {
-    width: 24px;
-    height: 24px;
-  }
-
-  span {
-    font-size: 14px;
-    font-weight: 500;
-  }
+const CartIconWrapper = styled.div`
+  position: relative;
+  width: 32px;
+  height: 32px;
 `;
 
-const PromoText = styled.p`
-  font-size: 13px;
-  color: #666;
-  margin: 0;
+const CartIcon = styled.svg`
+  width: 32px;
+  height: 32px;
+`;
+
+const CartBadge = styled.span`
+  position: absolute;
+  top: 8px;
+  left: 2px;
+  right: 0;
   text-align: center;
+  font-size: 10px;
+  font-weight: 600;
+  color: #212121;
 `;
 
 const ItemList = styled.div`
   flex: 1;
   overflow-y: auto;
   padding: 0 24px;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+  -ms-overflow-style: none;
+  scrollbar-width: none;
 `;
 
 const EmptyMessage = styled.div`
@@ -92,7 +96,7 @@ const EmptyMessage = styled.div`
 `;
 
 const Footer = styled.div`
-  padding: 20px 24px;
+  padding: 24px;
   border-top: 1px solid #e5e5e5;
 `;
 
@@ -100,11 +104,12 @@ const TotalRow = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 16px;
+  margin-bottom: 20px;
 `;
 
 const TotalLabel = styled.span`
-  font-size: 15px;
+  font-size: 16px;
+  font-weight: 400;
   color: #212121;
 `;
 
@@ -128,55 +133,78 @@ const CheckoutButton = styled.button`
   &:hover {
     background: #000;
   }
+
+  &:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+  }
 `;
 
 const CartSidebar = () => {
   const {
     cartItems,
     isCartOpen,
+    loading,
     totalAmount,
     totalCount,
     closeCart,
     updateQuantity,
     removeFromCart,
+    checkout,
   } = useCart();
 
-  const formatPrice = (value) => `₩${value?.toLocaleString()}`;
+  const formatPrice = (value) => `₩${(value || 0).toLocaleString()}`;
+
+  const handleCheckout = async () => {
+    const order = await checkout();
+    if (order) {
+      alert(
+        `결제가 완료되었습니다!\n주문번호: ${order._id}\n총액: ${formatPrice(
+          order.totalAmount
+        )}`
+      );
+    }
+  };
 
   return (
     <>
       <Overlay $open={isCartOpen} onClick={closeCart} />
       <Panel $open={isCartOpen}>
         <Header>
-          <HeaderTop>
-            <CloseButton onClick={closeCart}>×</CloseButton>
-            <CartIcon>
-              <svg
-                viewBox="0 0 24 24"
-                fill="none"
-                stroke="currentColor"
-                strokeWidth="1.5"
-              >
-                <path d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-              </svg>
-              <span>{totalCount}</span>
+          <CloseButton onClick={closeCart}>×</CloseButton>
+          <CartIconWrapper>
+            <CartIcon viewBox="0 0 24 24" fill="none">
+              <path
+                d="M9 22C9.55228 22 10 21.5523 10 21C10 20.4477 9.55228 20 9 20C8.44772 20 8 20.4477 8 21C8 21.5523 8.44772 22 9 22Z"
+                fill="#212121"
+              />
+              <path
+                d="M20 22C20.5523 22 21 21.5523 21 21C21 20.4477 20.5523 20 20 20C19.4477 20 19 20.4477 19 21C19 21.5523 19.4477 22 20 22Z"
+                fill="#212121"
+              />
+              <path
+                d="M1 1H5L7.68 14.39C7.77144 14.8504 8.02191 15.264 8.38755 15.5583C8.75318 15.8526 9.2107 16.009 9.68 16H19.4C19.8693 16.009 20.3268 15.8526 20.6925 15.5583C21.0581 15.264 21.3086 14.8504 21.4 14.39L23 6H6"
+                stroke="#212121"
+                strokeWidth="1.2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
             </CartIcon>
-          </HeaderTop>
-          <PromoText>
-            회원가입 시 1만원 할인 쿠폰 증정 (마케팅 수신 동의 필수)
-          </PromoText>
+            {totalCount > 0 && <CartBadge>{totalCount}</CartBadge>}
+          </CartIconWrapper>
         </Header>
 
         <ItemList>
           {cartItems.length === 0 ? (
             <EmptyMessage>장바구니가 비어있습니다</EmptyMessage>
           ) : (
-            cartItems.map((item) => (
+            cartItems.map((item, index) => (
               <CartItem
                 key={item._id}
                 item={item}
                 onQuantityChange={updateQuantity}
                 onRemove={removeFromCart}
+                isLast={index === cartItems.length - 1}
               />
             ))
           )}
@@ -187,7 +215,12 @@ const CartSidebar = () => {
             <TotalLabel>총액</TotalLabel>
             <TotalAmount>{formatPrice(totalAmount)}</TotalAmount>
           </TotalRow>
-          <CheckoutButton>결제</CheckoutButton>
+          <CheckoutButton
+            onClick={handleCheckout}
+            disabled={loading || cartItems.length === 0}
+          >
+            {loading ? "처리중..." : "결제"}
+          </CheckoutButton>
         </Footer>
       </Panel>
     </>
