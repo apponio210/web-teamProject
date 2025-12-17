@@ -11,7 +11,6 @@ const MATERIAL_MAP = {
   "가볍고 시원한 Tree": "트리",
 };
 
-// ============ styled-components 전부 그대로 유지 ============
 const Breadcrumb = styled.div`
   display: flex;
   align-items: center;
@@ -152,7 +151,7 @@ const PageDescription = styled.p`
 
 const Divider = styled.hr`
   border: none;
-  border-top: 1px solid #e5e5e5;
+  border-top: 1px solid #000000ff;
   margin: 20px 0 30px 0;
 `;
 
@@ -178,14 +177,20 @@ const SortButton = styled.button`
   gap: 8px;
   padding: 10px 16px;
   border: 1px solid #212121;
-  background: #fff;
+  background: ${(props) => (props.$open ? "#212121" : "#fff")};
+  color: ${(props) => (props.$open ? "#fff" : "#212121")};
   cursor: pointer;
   font-size: 14px;
-  color: #212121;
+  transition: all 0.2s;
 
   &:hover {
-    background: #f5f5f5;
+    background: ${(props) => (props.$open ? "#212121" : "#f5f5f5")};
   }
+`;
+
+const SortIcon = styled.svg`
+  width: 16px;
+  height: 16px;
 `;
 
 const SortMenu = styled.div`
@@ -193,7 +198,7 @@ const SortMenu = styled.div`
   top: 100%;
   right: 0;
   background: #fff;
-  border: 1px solid #e5e5e5;
+  border: 1px solid #212121;
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
   z-index: 100;
   min-width: 150px;
@@ -219,19 +224,20 @@ const SortOption = styled.button`
 `;
 
 const RadioCircle = styled.span`
-  width: 16px;
-  height: 16px;
-  border: 1px solid ${(props) => (props.$active ? "#212121" : "#ccc")};
+  width: 20px;
+  height: 20px;
+  border: 2px solid #212121;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: ${(props) => (props.$active ? "#212121" : "#fff")};
 
   &::after {
     content: "";
     width: 8px;
     height: 8px;
-    background: ${(props) => (props.$active ? "#212121" : "transparent")};
+    background: ${(props) => (props.$active ? "#fff" : "transparent")};
     border-radius: 50%;
   }
 `;
@@ -397,8 +403,6 @@ const MensShoes = () => {
     );
   }
 
-  const currentSortLabel = sortOptions.find((o) => o.key === sortBy)?.label;
-
   // ============ JSX 전부 그대로 유지 ============
   return (
     <PageWrapper>
@@ -464,9 +468,20 @@ const MensShoes = () => {
           <ContentHeader>
             <ProductCount>{sortedProducts.length}개 제품</ProductCount>
             <SortDropdown>
-              <SortButton onClick={() => setSortOpen(!sortOpen)}>
-                {currentSortLabel}
-                <span>▼</span>
+              <SortButton
+                $open={sortOpen}
+                onClick={() => setSortOpen(!sortOpen)}
+              >
+                <SortIcon
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                >
+                  <line x1="4" y1="6" x2="20" y2="6" />
+                  <line x1="4" y1="12" x2="14" y2="12" />
+                  <line x1="4" y1="18" x2="9" y2="18" />
+                </SortIcon>
               </SortButton>
               <SortMenu $open={sortOpen}>
                 {sortOptions.map((option) => (

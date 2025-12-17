@@ -35,7 +35,7 @@ const TopSection = styled.div`
 `;
 
 const LeftColumn = styled.div`
-  flex: 1;
+  flex: 1.4;
 
   @media (max-width: 768px) {
     max-width: 100%;
@@ -61,7 +61,7 @@ const WhiteSection = styled.div`
   }
 `;
 
-const ProductDetail = ({ product, reviews, onRefresh }) => {
+const ProductDetail = ({ product, reviews }) => {
   const [selectedImageIndex, setSelectedImageIndex] = useState(0);
 
   return (
@@ -83,20 +83,14 @@ const ProductDetail = ({ product, reviews, onRefresh }) => {
         </RightColumn>
       </TopSection>
 
-      <LifestyleBanner />
-      <FeatureCards />
+      {/* <LifestyleBanner />
+      <FeatureCards /> */}
 
-      <WhiteSection>
-        <ReviewSection
-          productId={product?.id}
-          reviews={reviews}
-          onReviewAdded={onRefresh}
-        />
-      </WhiteSection>
-
+      <ReviewSection reviews={reviews} />
+      {/* 
       <WhiteSection>
         <InfoCards />
-      </WhiteSection>
+      </WhiteSection> */}
     </PageContainer>
   );
 };

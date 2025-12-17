@@ -72,7 +72,7 @@ const ColorButton = styled.button`
   border: none;
   border-bottom: ${(props) =>
     props.$active ? "2px solid #212121" : "2px solid transparent"};
-  background: transparent;
+  background: #e4e0da;
   cursor: pointer;
   transition: border 0.2s;
   overflow: hidden;
@@ -90,8 +90,10 @@ const ColorButton = styled.button`
 
 const GenderToggle = styled.div`
   display: flex;
-  background: #f5f5f5;
+  background: #e4e0da;
   margin-bottom: 32px;
+  border-radius: 2px;
+  overflow: hidden;
 `;
 
 const GenderButton = styled.button`
@@ -103,8 +105,7 @@ const GenderButton = styled.button`
   cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
   transition: all 0.2s;
   background: ${(props) => (props.$active ? "#212121" : "transparent")};
-  color: ${(props) =>
-    props.$active ? "#fff" : props.$disabled ? "#ccc" : "#212121"};
+  color: ${(props) => (props.$active ? "#fff" : "#212121")};
 
   &:hover {
     background: ${(props) =>
@@ -143,10 +144,13 @@ const SizeGrid = styled.div`
 
 const SizeButton = styled.button`
   position: relative;
-  padding: 14px 8px;
-  border: 1px solid ${(props) => (props.$active ? "#212121" : "#e0e0e0")};
-  background: #fff;
-  color: ${(props) => (props.$disabled ? "#ccc" : "#212121")};
+  padding: 8px 8px;
+  border: 1px solid
+    ${(props) =>
+      props.$active ? "#000" : props.$disabled ? "#e0e0e0" : "#000"};
+  background: ${(props) => (props.$active ? "#000" : "#fff")};
+  color: ${(props) =>
+    props.$active ? "#fff" : props.$disabled ? "#ccc" : "#212121"};
   font-size: 14px;
   font-weight: 400;
   cursor: ${(props) => (props.$disabled ? "not-allowed" : "pointer")};
@@ -154,6 +158,8 @@ const SizeButton = styled.button`
   overflow: hidden;
 
   &:hover {
+    background: ${(props) =>
+      props.$active ? "#000" : props.$disabled ? "#fff" : "#c2c2c2ff"};
     border-color: ${(props) => (props.$disabled ? "#e0e0e0" : "#212121")};
   }
 
@@ -186,16 +192,18 @@ const AddToCartButton = styled.button`
   color: #fff;
   font-size: 16px;
   font-weight: 500;
-  border: none;
+  border: 1px solid #212121;
   cursor: pointer;
-  transition: background 0.2s;
+  transition: all 0.2s;
 
   &:hover {
-    background: #000;
+    background: #fff;
+    color: #212121;
   }
 
   &:disabled {
     background: #ccc;
+    border-color: #ccc;
     cursor: not-allowed;
   }
 `;
@@ -275,7 +283,7 @@ const ProductInfo = ({
       <Section>
         <SizeHeader>
           <SectionLabel>사이즈</SectionLabel>
-          <StockBadge>재고 있음</StockBadge>
+          {selectedSize && <StockBadge>재고 있음</StockBadge>}
         </SizeHeader>
         <SizeGrid>
           {sizes.map((item) => (

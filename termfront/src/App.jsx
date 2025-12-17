@@ -9,6 +9,7 @@ import LoginPage from "./pages/LoginPage";
 import MyPage from "./pages/MyPage";
 import { CartProvider } from "./context/CartProvider";
 import CartSidebar from "./components/cart/CartSidebar";
+import ReviewWritePage from "./pages/ReviewWritePage";
 
 export default function App() {
   return (
@@ -22,6 +23,7 @@ export default function App() {
             <Route path="/mypage" element={<MyPage />} />
             <Route path="/menshoes" element={<MensShoes />} />
             <Route path="/menshoes/:id" element={<ProductDetailPage />} />
+            <Route path="/review/write" element={<ReviewWritePage />} />
           </Route>
         </Routes>
         <CartSidebar />

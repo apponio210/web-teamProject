@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from "react";
+import { useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { fetchMyOrders } from "../../api/orders";
 
@@ -17,6 +18,7 @@ function formatMoney(n) {
 }
 
 export default function MyOrderHistory() {
+  const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [errorMsg, setErrorMsg] = useState("");
@@ -44,7 +46,6 @@ export default function MyOrderHistory() {
     };
   }, []);
 
-  // 최신 주문이 위로 오도록 정렬(원하면 제거)
   const sorted = useMemo(() => {
     return [...orders].sort((a, b) => {
       const ta = new Date(a?.paidAt || 0).getTime();
@@ -52,6 +53,10 @@ export default function MyOrderHistory() {
       return tb - ta;
     });
   }, [orders]);
+
+  const handleWriteReview = (productId) => {
+    navigate(`/review/write?productId=${productId}`);
+  };
 
   return (
     <Wrap>
@@ -99,11 +104,7 @@ export default function MyOrderHistory() {
                     <LineTotal>{formatMoney(it?.lineTotal)}원</LineTotal>
                     <ReviewBtn
                       type="button"
-                      onClick={() => {
-                        // TODO: 리뷰 페이지/모달로 이동
-                        // 예: navigate(`/review/write?product=${it.product}&order=${order._id}`)
-                        alert(`리뷰 작성: ${it?.nameSnapshot}`);
-                      }}
+                      onClick={() => handleWriteReview(it.product)}
                     >
                       리뷰 작성
                     </ReviewBtn>

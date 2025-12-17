@@ -6,6 +6,7 @@ import {
   updateCartItem,
   removeCartItem,
 } from "../api/cart";
+import { checkout as checkoutAPI } from "../api/orders";
 
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
@@ -13,12 +14,17 @@ export const CartProvider = ({ children }) => {
   const [loading, setLoading] = useState(false);
 
   const fetchCart = useCallback(async () => {
+    const token = localStorage.getItem("user");
+    if (!token) return;
+
     try {
       setLoading(true);
       const data = await getCart();
       setCartItems(data.items || []);
     } catch (error) {
-      console.error("장바구니 조회 실패:", error);
+      if (error.response?.status !== 401) {
+        console.error("장바구니 조회 실패:", error);
+      }
     } finally {
       setLoading(false);
     }
@@ -29,6 +35,12 @@ export const CartProvider = ({ children }) => {
   }, [fetchCart]);
 
   const addToCart = useCallback(async (product, size, quantity = 1) => {
+    const token = localStorage.getItem("user");
+    if (!token) {
+      alert("로그인이 필요합니다.");
+      return;
+    }
+
     try {
       const data = await addToCartAPI(product.id, size, quantity);
       setCartItems(data.items || []);
@@ -57,9 +69,29 @@ export const CartProvider = ({ children }) => {
     }
   }, []);
 
+  const checkout = useCallback(async () => {
+    if (cartItems.length === 0) {
+      alert("장바구니가 비어있습니다.");
+      return null;
+    }
+
+    try {
+      setLoading(true);
+      const order = await checkoutAPI();
+      setCartItems([]);
+      setIsCartOpen(false);
+      return order;
+    } catch (error) {
+      console.error("결제 실패:", error);
+      alert("결제에 실패했습니다. 다시 시도해주세요.");
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [cartItems.length]);
+
   const totalAmount = cartItems.reduce((sum, item) => {
-    const price = item.product?.price || 0;
-    return sum + price * item.quantity;
+    return sum + (item.lineTotal || 0);
   }, 0);
 
   const totalCount = cartItems.reduce((sum, item) => sum + item.quantity, 0);
@@ -81,6 +113,7 @@ export const CartProvider = ({ children }) => {
         openCart,
         closeCart,
         fetchCart,
+        checkout,
       }}
     >
       {children}

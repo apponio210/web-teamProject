@@ -36,9 +36,6 @@ export const transformProduct = (item) => ({
 
 export const transformProducts = (data) => data.map(transformProduct);
 
-// 기존 코드에 이거 추가
-
-// 상세 페이지용 변환 함수
 export const transformProductDetail = (data) => {
   const { product, reviews } = data;
 
@@ -61,10 +58,10 @@ export const transformProductDetail = (data) => {
       id: review._id,
       name: review.user?.name || "익명",
       rating: review.rating,
-      title: "",
+      title: review.title || "",
       content: review.comment,
       date: new Date(review.createdAt).toLocaleDateString("ko-KR"),
-      image: null,
+      image: review.image || null,
     })),
   };
 };
