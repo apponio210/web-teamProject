@@ -26,59 +26,67 @@ const openapiSpec = YAML.parse(openapiText);
 
 const app = express();
 
-// Swagger UI
-app.use(
-    "/api-docs",
-    swaggerUi.serve,
-    swaggerUi.setup(openapiSpec, {
-        swaggerOptions: {
-            withCredentials: true, // 세션 쿠키 테스트 편함
-        },
-    })
-);
-
-const {
-    MONGODB_URI,
-    SESSION_SECRET,
-    CLIENT_ORIGIN,
-    PORT = 3000
-} = process.env;
+const { MONGODB_URI, SESSION_SECRET, CLIENT_ORIGIN, PORT = 3000 } = process.env;
 
 // DB 연결
 connectDB(MONGODB_URI);
 
+const allowedOrigins = CLIENT_ORIGIN
+  ? CLIENT_ORIGIN.split(",").map((origin) => origin.trim())
+  : [];
+
+function corsOrigin(origin, callback) {
+  if (!origin) return callback(null, true);
+
+  if (allowedOrigins.includes(origin)) return callback(null, true);
+
+  return callback(new Error(`Not allowed by CORS: ${origin}`));
+}
+
+// Swagger UI
+app.use(
+  "/api-docs",
+  swaggerUi.serve,
+  swaggerUi.setup(openapiSpec, {
+    swaggerOptions: {
+      withCredentials: true,
+    },
+  })
+);
+
 // 미들웨어
 app.use(
-    cors({
-        origin: CLIENT_ORIGIN,
-        credentials: true
-    })
+  cors({
+    origin: corsOrigin,
+    credentials: true,
+  })
 );
+
+// ✅ preflight
+app.options("*", cors({ origin: corsOrigin, credentials: true }));
+
 app.use(morgan("dev"));
 app.use(express.json());
 
-// 🔹 업로드된 이미지를 /uploads 경로로 제공
-app.use(
-    "/uploads",
-    express.static(path.join(__dirname, "..", "uploads"))
-);
+// 업로드 이미지 제공
+app.use("/uploads", express.static(path.join(__dirname, "..", "uploads")));
 
 // 세션 설정
 app.use(
-    session({
-        secret: SESSION_SECRET,
-        resave: false,
-        saveUninitialized: false,
-        cookie: {
-            httpOnly: true,
-            // 개발용: true/false 조절 (https 쓸 때는 secure: true)
-            secure: false
-        },
-        store: MongoStore.create({
-            mongoUrl: MONGODB_URI,
-            collectionName: "sessions"
-        })
-    })
+  session({
+    secret: SESSION_SECRET,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      httpOnly: true,
+      secure: false, // https면 true
+      sameSite: "lax", // ✅ 로컬 개발에 안전한 기본값
+    },
+    store: MongoStore.create({
+      mongoUrl: MONGODB_URI,
+      collectionName: "sessions",
+    }),
+  })
 );
 
 // 라우팅
@@ -91,9 +99,10 @@ app.use("/api/reviews", reviewRoutes);
 
 // 헬스 체크
 app.get("/", (req, res) => {
-    res.send("Shoe shop backend running");
+  res.send("Shoe shop backend running");
 });
 
 app.listen(PORT, () => {
-    console.log(`🚀 Server listening on port ${PORT}`);
+  console.log(`🚀 Server listening on port ${PORT}`);
+  console.log("✅ Allowed origins:", allowedOrigins);
 });

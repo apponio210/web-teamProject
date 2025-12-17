@@ -35,6 +35,20 @@ async function recalcCart(cart) {
   return cart;
 }
 
+// ✅ 상품 사이즈 재고 조회 헬퍼
+async function getSizeStock(productId, sizeNum) {
+    const product = await Product.findById(productId)
+        .select("sizes")
+        .lean();
+
+    if (!product) return { ok: false, reason: "NOT_FOUND" };
+
+    const row = (product.sizes || []).find((s) => Number(s.size) === Number(sizeNum));
+    if (!row) return { ok: false, reason: "SIZE_NOT_EXIST" };
+
+    return { ok: true, stock: Number(row.stock || 0) };
+}
+
 // 장바구니 조회
 router.get("/", requireAuth, async (req, res) => {
   try {
@@ -49,39 +63,68 @@ router.get("/", requireAuth, async (req, res) => {
 
 // 장바구니 담기
 router.post("/add", requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.user.id;
-    const { productId, size, quantity } = req.body;
+    try {
+        const userId = req.session.user.id;
+        const { productId, size, quantity } = req.body;
 
-    const sizeNum = Number(size);
-    const qtyNum = Number(quantity);
+        const sizeNum = Number(size);
+        const qtyNum = Number(quantity);
 
-    // 1) 필수값 + 숫자 검증
-    if (!productId || !Number.isFinite(sizeNum) || !Number.isFinite(qtyNum)) {
-      return res
-        .status(400)
-        .json({ message: "productId, size, quantity는 필수입니다." });
-    }
-    if (sizeNum <= 0) {
-      return res.status(400).json({ message: "사이즈를 선택해주세요." });
-    }
-    if (qtyNum < 1) {
-      return res.status(400).json({ message: "수량은 1 이상이어야 합니다." });
-    }
+        // 1) 필수값 + 숫자 검증
+        if (!productId || !Number.isFinite(sizeNum) || !Number.isFinite(qtyNum)) {
+            return res.status(400).json({ message: "productId, size, quantity는 필수입니다." });
+        }
+        if (sizeNum <= 0) {
+            return res.status(400).json({ message: "사이즈를 선택해주세요." });
+        }
+        if (qtyNum < 1) {
+            return res.status(400).json({ message: "수량은 1 이상이어야 합니다." });
+        }
 
-    const product = await Product.findById(productId).lean();
-    if (!product) {
-      return res.status(404).json({ message: "상품을 찾을 수 없습니다." });
-    }
+        // ✅ sizes 기준으로 해당 사이즈 존재/재고 확인
+        const sizeInfo = await getSizeStock(productId, sizeNum);
+        if (!sizeInfo.ok) {
+            if (sizeInfo.reason === "NOT_FOUND") {
+                return res.status(404).json({ message: "상품을 찾을 수 없습니다." });
+            }
+            return res.status(400).json({ message: "선택한 사이즈는 제공되지 않습니다." });
+        }
+        if (sizeInfo.stock <= 0) {
+            return res.status(409).json({ message: "해당 사이즈는 품절입니다." });
+        }
 
-    // 2) 상품에 존재하는 사이즈인지 검증
-    const available = Array.isArray(product.availableSizes)
-      ? product.availableSizes
-      : [];
-    if (!available.includes(sizeNum)) {
-      return res
-        .status(400)
-        .json({ message: "선택한 사이즈는 현재 상품에서 제공되지 않습니다." });
+        let cart = await getOrCreateCart(userId);
+
+        const existing = cart.items.find(
+            (item) =>
+                item.product.toString() === productId.toString() &&
+                item.size === sizeNum
+        );
+
+        // ✅ 장바구니에 이미 담긴 수량까지 포함해서 재고 초과 방지
+        const newQty = (existing ? existing.quantity : 0) + qtyNum;
+        if (newQty > sizeInfo.stock) {
+            return res.status(409).json({ message: `재고가 부족합니다. (남은 수량: ${sizeInfo.stock})` });
+        }
+
+        if (existing) {
+            existing.quantity += qtyNum;
+        } else {
+            cart.items.push({
+                product: productId,
+                size: sizeNum,
+                quantity: qtyNum,
+                unitPrice: 0,
+                lineTotal: 0
+            });
+        }
+
+        cart = await recalcCart(cart);
+
+        res.json(cart);
+    } catch (err) {
+        console.error("POST /api/cart/add error:", err);
+        res.status(500).json({ message: "장바구니 담기 실패" });
     }
 
     let cart = await getOrCreateCart(userId);
@@ -116,33 +159,56 @@ router.post("/add", requireAuth, async (req, res) => {
 
 // 수량 변경
 router.patch("/item", requireAuth, async (req, res) => {
-  try {
-    const userId = req.session.user.id;
-    const { productId, size, quantity } = req.body;
+    try {
+        const userId = req.session.user.id;
+        const { productId, size, quantity } = req.body;
 
-    const sizeNum = Number(size);
-    const qtyNum = Number(quantity);
+        const sizeNum = Number(size);
+        const qtyNum = Number(quantity);
 
-    if (!productId || !size || quantity === undefined) {
-      return res
-        .status(400)
-        .json({ message: "productId, size, quantity는 필수입니다." });
-    }
+        if (!productId || !Number.isFinite(sizeNum) || quantity === undefined) {
+            return res.status(400).json({ message: "productId, size, quantity는 필수입니다." });
+        }
 
-    let cart = await getOrCreateCart(userId);
+        let cart = await getOrCreateCart(userId);
 
-    const idx = cart.items.findIndex((item) => {
-      const itemProductId = item.product?._id
-        ? item.product._id.toString()
-        : item.product.toString();
+        const idx = cart.items.findIndex((item) => {
+            const itemProductId = item.product?._id
+                ? item.product._id.toString()
+                : item.product.toString();
 
-      return itemProductId === productId.toString() && item.size === sizeNum;
-    });
+            return itemProductId === productId.toString() && item.size === sizeNum;
+        });
 
-    if (idx === -1) {
-      return res
-        .status(404)
-        .json({ message: "장바구니에 해당 상품이 없습니다." });
+        if (idx === -1) {
+            return res
+                .status(404)
+                .json({ message: "장바구니에 해당 상품이 없습니다." });
+        }
+
+        // 0 이하면 삭제
+        if (qtyNum <= 0) {
+            cart.items.splice(idx, 1);
+            cart = await recalcCart(cart);
+            return res.json(cart);
+        }
+
+        // ✅ 재고 확인 후 수량 변경
+        const sizeInfo = await getSizeStock(productId, sizeNum);
+        if (!sizeInfo.ok) {
+            return res.status(400).json({ message: "선택한 사이즈는 제공되지 않습니다." });
+        }
+        if (qtyNum > sizeInfo.stock) {
+            return res.status(409).json({ message: `재고가 부족합니다. (남은 수량: ${sizeInfo.stock})` });
+        }
+
+        cart.items[idx].quantity = qtyNum;
+
+        cart = await recalcCart(cart);
+        res.json(cart);
+    } catch (err) {
+        console.error("PATCH /api/cart/item error:", err);
+        res.status(500).json({ message: "장바구니 수정 실패" });
     }
 
     if (quantity <= 0) {
