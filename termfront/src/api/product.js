@@ -39,16 +39,8 @@ export const transformProduct = (item) => ({
   discountRate: item.discountRate,
   image: item.images[0] ? `${API_BASE_URL}${item.images[0]}` : null,
   images: item.images.map((img) => `${API_BASE_URL}${img}`),
-  // allSizes: 기존 데이터 우선, 없으면 sizes에서 추출
-  allSizes:
-    item.allSizes?.length > 0
-      ? item.allSizes
-      : getAllSizesFromSizes(item.sizes),
-  // availableSizes: 기존 데이터 우선, 없으면 sizes에서 stock > 0인 것만 추출
-  availableSizes:
-    item.availableSizes?.length > 0
-      ? item.availableSizes
-      : getAvailableSizesFromSizes(item.sizes),
+  allSizes: getAllSizesFromSizes(item.sizes),
+  availableSizes: getAvailableSizesFromSizes(item.sizes),
   materials: item.materials,
   categories: item.categories,
   salesCount: item.salesCount,
@@ -71,16 +63,8 @@ export const transformProductDetail = (data) => {
           : product.basePrice,
       originalPrice: product.discountRate > 0 ? product.basePrice : null,
       images: product.images.map((img) => `${API_BASE_URL}${img}`),
-      // allSizes: 기존 데이터 우선, 없으면 sizes에서 추출
-      allSizes:
-        product.allSizes?.length > 0
-          ? product.allSizes
-          : getAllSizesFromSizes(product.sizes),
-      // availableSizes: 기존 데이터 우선, 없으면 sizes에서 stock > 0인 것만 추출
-      availableSizes:
-        product.availableSizes?.length > 0
-          ? product.availableSizes
-          : getAvailableSizesFromSizes(product.sizes),
+      allSizes: getAllSizesFromSizes(product.sizes),
+      availableSizes: getAvailableSizesFromSizes(product.sizes),
       materials: product.materials,
       categories: product.categories,
       details: product.details,
