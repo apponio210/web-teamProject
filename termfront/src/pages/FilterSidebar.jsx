@@ -150,33 +150,33 @@ const FilterSidebar = ({ filters, onFilterChange, onReset, products = [] }) => {
   const materials = ["가볍고 시원한 Tree", "부드럽고 따뜻한 Wool"];
 
   // 기능 (렌더링만, 필터링 기능 없음)
-  const features = [
-    "비즈니스",
-    "캐주얼",
-    "가벼운 산책",
-    "러닝",
-    "발수",
-    "슬립온",
-    "슬리퍼",
-    "클래식 스니커즈",
-    "라이프스타일",
-    "강한 접지력",
-    "트레일러닝",
-    "등산",
-    "애슬레저",
-  ];
+  // const features = [
+  //   "비즈니스",
+  //   "캐주얼",
+  //   "가벼운 산책",
+  //   "러닝",
+  //   "발수",
+  //   "슬립온",
+  //   "슬리퍼",
+  //   "클래식 스니커즈",
+  //   "라이프스타일",
+  //   "강한 접지력",
+  //   "트레일러닝",
+  //   "등산",
+  //   "애슬레저",
+  // ];
 
   // 모델 (렌더링만, 필터링 기능 없음)
-  const models = [
-    "대셔",
-    "라운저",
-    "러너",
-    "스키퍼",
-    "크루저",
-    "트레일",
-    "파이퍼",
-    "플라이어",
-  ];
+  // const models = [
+  //   "대셔",
+  //   "라운저",
+  //   "러너",
+  //   "스키퍼",
+  //   "크루저",
+  //   "트레일",
+  //   "파이퍼",
+  //   "플라이어",
+  // ];
 
   const handleSizeClick = (size) => {
     const newSizes = filters.sizes.includes(size)
@@ -257,7 +257,7 @@ const FilterSidebar = ({ filters, onFilterChange, onReset, products = [] }) => {
         </CheckboxList>
       </FilterSection>
 
-      <FilterSection>
+      {/* <FilterSection>
         <FilterTitle>기능</FilterTitle>
         <CheckboxList>
           {features.map((feature) => (
@@ -281,7 +281,7 @@ const FilterSidebar = ({ filters, onFilterChange, onReset, products = [] }) => {
             </CheckboxLabel>
           ))}
         </CheckboxList>
-      </FilterSection>
+      </FilterSection> */}
     </Sidebar>
   );
 };

@@ -53,6 +53,7 @@ const InfoBox = styled.div`
 const ThumbnailWrapper = styled.div`
   position: relative;
   margin-bottom: 14px;
+  min-height: 44px;
 `;
 
 const ThumbnailContainer = styled.div`
@@ -299,7 +300,6 @@ const ProductCard = ({ product }) => {
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
 
-  // ✅ 서버 데이터 사용 (수정된 부분)
   const sizes = (product.allSizes || []).map((size) => ({
     size,
     available: product.availableSizes?.includes(size) || false,
@@ -319,45 +319,48 @@ const ProductCard = ({ product }) => {
           </ImageContainer>
 
           <InfoBox>
-            {hasMultipleImages && (
-              <ThumbnailWrapper>
-                {canScrollLeft && (
-                  <ArrowButton
-                    $left
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      scrollThumbnails("left");
-                    }}
-                  >
-                    <ArrowIcon>‹</ArrowIcon>
-                  </ArrowButton>
-                )}
-
-                <ThumbnailContainer ref={thumbnailRef}>
-                  {product.images.map((img, index) => (
-                    <Thumbnail
-                      key={index}
-                      $active={currentImageIndex === index}
-                      onClick={(e) => handleThumbnailClick(e, index)}
+            {/* 👇 ThumbnailWrapper를 항상 렌더링, 내부만 조건부 */}
+            <ThumbnailWrapper>
+              {hasMultipleImages && (
+                <>
+                  {canScrollLeft && (
+                    <ArrowButton
+                      $left
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollThumbnails("left");
+                      }}
                     >
-                      <img src={img} alt={`${product.name} ${index + 1}`} />
-                    </Thumbnail>
-                  ))}
-                </ThumbnailContainer>
+                      <ArrowIcon>‹</ArrowIcon>
+                    </ArrowButton>
+                  )}
 
-                {canScrollRight && (
-                  <ArrowButton
-                    $right
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      scrollThumbnails("right");
-                    }}
-                  >
-                    <ArrowIcon>›</ArrowIcon>
-                  </ArrowButton>
-                )}
-              </ThumbnailWrapper>
-            )}
+                  <ThumbnailContainer ref={thumbnailRef}>
+                    {product.images.map((img, index) => (
+                      <Thumbnail
+                        key={index}
+                        $active={currentImageIndex === index}
+                        onClick={(e) => handleThumbnailClick(e, index)}
+                      >
+                        <img src={img} alt={`${product.name} ${index + 1}`} />
+                      </Thumbnail>
+                    ))}
+                  </ThumbnailContainer>
+
+                  {canScrollRight && (
+                    <ArrowButton
+                      $right
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        scrollThumbnails("right");
+                      }}
+                    >
+                      <ArrowIcon>›</ArrowIcon>
+                    </ArrowButton>
+                  )}
+                </>
+              )}
+            </ThumbnailWrapper>
 
             <ProductInfo onClick={goToDetail}>
               <ProductName>{product.name}</ProductName>
