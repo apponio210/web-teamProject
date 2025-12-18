@@ -61,6 +61,12 @@ router.post("/checkout", requireAuth, async (req, res) => {
             const items = cart.items.map((item) => {
                 const product = item.product;
 
+                // ✅ 대표 이미지 스냅샷 (주문 시점 고정)
+                const imageSnapshot =
+                    Array.isArray(product.images) && product.images.length > 0
+                        ? product.images[0]
+                        : ""; // 기본 이미지가 있으면 "/uploads/no-image.png" 같은 걸로 넣어도 됨
+
                 const salePrice =
                     typeof product.getSalePrice === "function"
                         ? product.getSalePrice()
@@ -72,6 +78,7 @@ router.post("/checkout", requireAuth, async (req, res) => {
                 return {
                     product: product._id,
                     nameSnapshot: product.name,
+                    imageSnapshot, // ✅ 추가됨
                     size: item.size,
                     quantity: item.quantity,
                     unitPrice,

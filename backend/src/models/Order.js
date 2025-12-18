@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const orderItemSchema = new mongoose.Schema({
     product: { type: mongoose.Schema.Types.ObjectId, ref: "Product", required: true },
     nameSnapshot: { type: String, required: true },      // 주문 시점 제품명
+    imageSnapshot: { type: String, required: true },
     size: { type: Number, required: true },
     quantity: { type: Number, required: true },
     unitPrice: { type: Number, required: true },         // 할인 적용된 단가
