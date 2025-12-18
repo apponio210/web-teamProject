@@ -97,11 +97,14 @@ router.post("/add", requireAuth, async (req, res) => {
 
     let cart = await getOrCreateCart(userId);
 
-    const existing = cart.items.find(
-      (item) =>
-        item.product.toString() === productId.toString() &&
-        item.size === sizeNum
-    );
+    // ✅ populate 여부 상관없이 productId 매칭되게 수정
+    const existing = cart.items.find((item) => {
+      const itemProductId = item.product?._id
+        ? item.product._id.toString()
+        : item.product.toString();
+
+      return itemProductId === productId.toString() && Number(item.size) === sizeNum;
+    });
 
     const newQty = (existing ? existing.quantity : 0) + qtyNum;
     if (newQty > sizeInfo.stock) {
@@ -111,7 +114,7 @@ router.post("/add", requireAuth, async (req, res) => {
     }
 
     if (existing) {
-      existing.quantity += qtyNum;
+      existing.quantity += qtyNum; // ✅ 같은 상품+사이즈면 수량 증가
     } else {
       cart.items.push({
         product: productId,
