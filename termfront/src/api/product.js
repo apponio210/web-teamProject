@@ -21,12 +21,6 @@ const getAvailableSizesFromSizes = (sizes) => {
   return sizes.filter((item) => item.stock > 0).map((item) => item.size);
 };
 
-// sizes 배열에서 전체 사이즈 추출하는 헬퍼 함수
-const getAllSizesFromSizes = (sizes) => {
-  if (!sizes || !Array.isArray(sizes)) return [];
-  return sizes.map((item) => item.size);
-};
-
 export const transformProduct = (item) => ({
   id: item._id,
   name: item.name,
@@ -39,16 +33,8 @@ export const transformProduct = (item) => ({
   discountRate: item.discountRate,
   image: item.images[0] ? `${API_BASE_URL}${item.images[0]}` : null,
   images: item.images.map((img) => `${API_BASE_URL}${img}`),
-  // allSizes: 기존 데이터 우선, 없으면 sizes에서 추출
-  allSizes:
-    item.allSizes?.length > 0
-      ? item.allSizes
-      : getAllSizesFromSizes(item.sizes),
-  // availableSizes: 기존 데이터 우선, 없으면 sizes에서 stock > 0인 것만 추출
-  availableSizes:
-    item.availableSizes?.length > 0
-      ? item.availableSizes
-      : getAvailableSizesFromSizes(item.sizes),
+  allSizes: item.allSizes || [], // 서버에서 내려주는 전체 사이즈
+  availableSizes: getAvailableSizesFromSizes(item.sizes), // sizes에서 stock > 0인 것만
   materials: item.materials,
   categories: item.categories,
   salesCount: item.salesCount,
@@ -71,16 +57,8 @@ export const transformProductDetail = (data) => {
           : product.basePrice,
       originalPrice: product.discountRate > 0 ? product.basePrice : null,
       images: product.images.map((img) => `${API_BASE_URL}${img}`),
-      // allSizes: 기존 데이터 우선, 없으면 sizes에서 추출
-      allSizes:
-        product.allSizes?.length > 0
-          ? product.allSizes
-          : getAllSizesFromSizes(product.sizes),
-      // availableSizes: 기존 데이터 우선, 없으면 sizes에서 stock > 0인 것만 추출
-      availableSizes:
-        product.availableSizes?.length > 0
-          ? product.availableSizes
-          : getAvailableSizesFromSizes(product.sizes),
+      allSizes: product.allSizes || [], // 서버에서 내려주는 전체 사이즈
+      availableSizes: getAvailableSizesFromSizes(product.sizes), // sizes에서 stock > 0인 것만
       materials: product.materials,
       categories: product.categories,
       details: product.details,
