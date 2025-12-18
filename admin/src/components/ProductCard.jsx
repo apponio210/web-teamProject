@@ -5,6 +5,17 @@ import styled from "styled-components";
 export default function ProductCard({ product, thumbIndex = 0, onPickThumb }) {
   const nav = useNavigate();
 
+// ✅ 표시용 사이즈(우선순위: allSizes -> sizes[].size)
+  const viewSizes = useMemo(() => {
+    if (Array.isArray(product?.allSizes) && product.allSizes.length > 0) {
+      return product.allSizes;
+    }
+    if (Array.isArray(product?.sizes) && product.sizes.length > 0) {
+      return product.sizes.map((s) => s.size);
+    }
+    return [];
+  }, [product?.allSizes, product?.sizes]);
+
   const images = product?.images || [];
   const mainImg = images[thumbIndex] || images[0];
 
@@ -64,7 +75,7 @@ export default function ProductCard({ product, thumbIndex = 0, onPickThumb }) {
         </PriceRow>
 
         <SubRow>
-          <Small>사이즈: {(product?.availableSizes || []).join(", ")}</Small>
+          <Small>사이즈: {viewSizes.join(", ")}</Small>
           <Small>판매수: {product?.salesCount ?? 0}</Small>
         </SubRow>
 
