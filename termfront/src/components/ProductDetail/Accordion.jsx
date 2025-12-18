@@ -42,7 +42,6 @@ const AccordionIcon = styled.span`
     transition: transform 0.3s ease;
   }
 
-  /* 가로선 (항상 유지) */
   &::before {
     width: 100%;
     height: 1.5px;
@@ -51,7 +50,6 @@ const AccordionIcon = styled.span`
     transform: translateY(-50%);
   }
 
-  /* 세로선 (열리면 90도 회전해서 가로선과 겹침) */
   &::after {
     width: 1.5px;
     height: 100%;
@@ -84,7 +82,9 @@ const ContentInner = styled.div`
   }
 `;
 
-const Accordion = () => {
+const Accordion = ({ product }) => {
+  console.log("Accordion product:", product);
+
   const [openIndex, setOpenIndex] = useState(null);
 
   const items = [
@@ -92,10 +92,21 @@ const Accordion = () => {
       title: "상세 정보",
       content: (
         <ul>
-          <li>메리노 울 블렌드 어퍼로 부드럽고 통기성이 좋습니다</li>
-          <li>쿠셔닝이 뛰어난 SweetFoam® 미드솔</li>
-          <li>천연 고무 아웃솔로 내구성과 그립력 확보</li>
-          <li>리사이클 소재로 만든 신발끈</li>
+          {product?.details?.description && (
+            <li>{product.details.description}</li>
+          )}
+          {product?.details?.usages?.map((usage, i) => (
+            <li key={i}>{usage}</li>
+          ))}
+          {product?.details?.temperatureControl && (
+            <li>온도 조절: {product.details.temperatureControl}</li>
+          )}
+          {product?.details?.design && (
+            <li>디자인: {product.details.design}</li>
+          )}
+          {product?.details?.madeIn?.length > 0 && (
+            <li>제조국: {product.details.madeIn.join(", ")}</li>
+          )}
         </ul>
       ),
     },
@@ -103,9 +114,18 @@ const Accordion = () => {
       title: "지속 가능성",
       content: (
         <ul>
-          <li>ZQ 인증 메리노 울 사용</li>
-          <li>사탕수수 기반 SweetFoam® 기술</li>
-          <li>탄소 발자국 저감을 위한 지속적인 노력</li>
+          {product?.sustainability?.description && (
+            <li>{product.sustainability.description}</li>
+          )}
+          {product?.sustainability?.sustainableMaterials?.map((mat, i) => (
+            <li key={i}>{mat}</li>
+          ))}
+          {product?.sustainability?.carbonFootprintKgCO2e && (
+            <li>
+              탄소 발자국: {product.sustainability.carbonFootprintKgCO2e} kg
+              CO₂e
+            </li>
+          )}
         </ul>
       ),
     },
@@ -113,9 +133,12 @@ const Accordion = () => {
       title: "케어 방법",
       content: (
         <ul>
-          <li>세탁기 사용 가능 (찬물, 약한 세탁)</li>
-          <li>울 전용 세제 사용 권장</li>
-          <li>자연 건조 (직사광선 피하기)</li>
+          {product?.care?.instructions?.map((inst, i) => (
+            <li key={i}>{inst}</li>
+          ))}
+          {product?.care?.tips?.map((tip, i) => (
+            <li key={i}>{tip}</li>
+          ))}
         </ul>
       ),
     },
@@ -123,9 +146,21 @@ const Accordion = () => {
       title: "배송 & 반품",
       content: (
         <ul>
-          <li>무료 배송 (3-5 영업일 소요)</li>
-          <li>30일 이내 무료 반품 가능</li>
-          <li>미착용 상품에 한해 전액 환불</li>
+          {product?.shippingReturn?.description && (
+            <li>{product.shippingReturn.description}</li>
+          )}
+          {product?.shippingReturn?.memberPolicy && (
+            <li>회원: {product.shippingReturn.memberPolicy}</li>
+          )}
+          {product?.shippingReturn?.nonMemberPolicy && (
+            <li>비회원: {product.shippingReturn.nonMemberPolicy}</li>
+          )}
+          {product?.shippingReturn?.returnPolicy && (
+            <li>반품: {product.shippingReturn.returnPolicy}</li>
+          )}
+          {product?.shippingReturn?.exchangePolicy && (
+            <li>교환: {product.shippingReturn.exchangePolicy}</li>
+          )}
         </ul>
       ),
     },

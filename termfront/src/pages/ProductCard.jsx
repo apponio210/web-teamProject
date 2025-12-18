@@ -299,11 +299,8 @@ const ProductCard = ({ product }) => {
     ? Math.round((1 - product.price / product.originalPrice) * 100)
     : null;
 
-  const allSizes = [
-    220, 230, 240, 250, 255, 260, 265, 270, 275, 280, 285, 290, 295, 300, 305,
-    310, 315, 320,
-  ];
-  const sizes = allSizes.map((size) => ({
+  // ✅ 서버 데이터 사용 (수정된 부분)
+  const sizes = (product.allSizes || []).map((size) => ({
     size,
     available: product.availableSizes?.includes(size) || false,
   }));

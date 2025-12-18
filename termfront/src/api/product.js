@@ -5,20 +5,20 @@ export const getProducts = async (params = {}) => {
   return response.data;
 };
 
-export const getPopularProducts = async () => {
-  const response = await api.get("/api/products/popular");
+export const getProductById = async (id) => {
+  const response = await api.get(`/api/products/${id}`);
   return response.data;
 };
 
-export const getProductById = async (id) => {
-  const response = await api.get(`/api/products/${id}`);
+export const getPopularProducts = async () => {
+  const response = await api.get("/api/products/popular");
   return response.data;
 };
 
 export const transformProduct = (item) => ({
   id: item._id,
   name: item.name,
-  subtitle: item.shortDesc,
+  subtitle: item.short, // 👈 shortDesc → short로 변경
   price:
     item.discountRate > 0
       ? Math.round(item.basePrice * (1 - item.discountRate / 100))
@@ -27,6 +27,7 @@ export const transformProduct = (item) => ({
   discountRate: item.discountRate,
   image: item.images[0] ? `${API_BASE_URL}${item.images[0]}` : null,
   images: item.images.map((img) => `${API_BASE_URL}${img}`),
+  allSizes: item.allSizes,
   availableSizes: item.availableSizes,
   materials: item.materials,
   categories: item.categories,
@@ -50,9 +51,14 @@ export const transformProductDetail = (data) => {
           : product.basePrice,
       originalPrice: product.discountRate > 0 ? product.basePrice : null,
       images: product.images.map((img) => `${API_BASE_URL}${img}`),
+      allSizes: product.allSizes,
       availableSizes: product.availableSizes,
       materials: product.materials,
       categories: product.categories,
+      details: product.details,
+      sustainability: product.sustainability,
+      care: product.care,
+      shippingReturn: product.shippingReturn,
     },
     reviews: reviews.map((review) => ({
       id: review._id,
