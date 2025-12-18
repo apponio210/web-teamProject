@@ -1,8 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import styled from "styled-components";
 import { writeReview } from "../api/review";
-import { getProductById } from "../api/product";
 
 const Container = styled.div`
   max-width: 600px;
@@ -16,36 +15,6 @@ const Title = styled.h1`
   color: #212121;
   margin: 0 0 32px 0;
   text-align: center;
-`;
-
-const ProductInfo = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 20px;
-  background: #f9f9f9;
-  border-radius: 8px;
-  margin-bottom: 32px;
-`;
-
-const ProductImage = styled.div`
-  width: 80px;
-  height: 80px;
-  background: #e4e0da;
-  border-radius: 4px;
-  overflow: hidden;
-
-  img {
-    width: 100%;
-    height: 100%;
-    object-fit: cover;
-  }
-`;
-
-const ProductName = styled.span`
-  font-size: 16px;
-  font-weight: 500;
-  color: #212121;
 `;
 
 const FormSection = styled.div`
@@ -176,26 +145,12 @@ const ReviewWritePage = () => {
 
   const productId = searchParams.get("productId");
 
-  const [product, setProduct] = useState(null);
   const [rating, setRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [title, setTitle] = useState("");
   const [comment, setComment] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
-
-  useEffect(() => {
-    const fetchProduct = async () => {
-      if (!productId) return;
-      try {
-        const data = await getProductById(productId);
-        setProduct(data);
-      } catch (err) {
-        console.error("상품 정보 조회 실패:", err);
-      }
-    };
-    fetchProduct();
-  }, [productId]);
 
   const handleSubmit = async () => {
     if (rating === 0) {
@@ -237,17 +192,6 @@ const ReviewWritePage = () => {
   return (
     <Container>
       <Title>리뷰 작성</Title>
-
-      {product && (
-        <ProductInfo>
-          <ProductImage>
-            {product.images?.[0] && (
-              <img src={product.images[0]} alt={product.name} />
-            )}
-          </ProductImage>
-          <ProductName>{product.name}</ProductName>
-        </ProductInfo>
-      )}
 
       <FormSection>
         <Label>별점</Label>

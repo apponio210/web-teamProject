@@ -269,7 +269,6 @@ const ErrorText = styled.p`
   padding: 40px;
 `;
 
-// ============ 컴포넌트 시작 ============
 const MensShoes = () => {
   const [activeGender, setActiveGender] = useState("men");
   const [activeCategory, setActiveCategory] = useState("");
@@ -288,10 +287,10 @@ const MensShoes = () => {
   const categories = [
     { key: "new", label: "신제품" },
     { key: "LIFESTYLE", label: "라이프스타일" },
-    { key: "active", label: "액티브" },
+    { key: "active", label: "액티브", disabled: true },
     { key: "sale", label: "세일" },
     { key: "SLIPON", label: "슬립온" },
-    { key: "SLIPPER", label: "슬리퍼" },
+    { key: "SLIPPER", label: "슬리퍼", disabled: true },
   ];
 
   const sortOptions = [
@@ -454,6 +453,7 @@ const MensShoes = () => {
           <CategoryTab
             key={category.key}
             $active={activeCategory === category.key}
+            disabled={category.disabled}
             onClick={() => handleCategoryClick(category.key)}
           >
             {category.label}
