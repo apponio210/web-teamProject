@@ -59,6 +59,14 @@ export default function MyOrderHistory() {
     navigate(`/review/write?productId=${productId}`);
   };
 
+  const toImageUrl = (path) => {
+    if (!path) return "";
+    if (/^https?:\/\//i.test(path)) return path;
+
+    const base = import.meta.env.VITE_API_BASE_URL || "";
+    return `${base}${path}`;
+  };
+
   return (
     <Wrap>
       <HeadRow>
@@ -91,7 +99,13 @@ export default function MyOrderHistory() {
             <Items>
               {(order?.items || []).map((it, idx) => (
                 <ItemRow key={`${order?._id}-${idx}`}>
-                  <Thumb aria-hidden="true" />
+                  <ThumbImg
+                    src={toImageUrl(it?.imageSnapshot)}
+                    alt={it?.nameSnapshot || "상품 이미지"}
+                    onError={(e) => {
+                      e.currentTarget.src = "/no-image.png";
+                    }}
+                  />
 
                   <ItemInfo>
                     <ItemName>{it?.nameSnapshot || "상품"}</ItemName>
@@ -208,13 +222,6 @@ const ItemRow = styled.div`
   }
 `;
 
-const Thumb = styled.div`
-  width: 64px;
-  height: 64px;
-  border-radius: 8px;
-  background: #f3f3f3;
-`;
-
 const ItemInfo = styled.div`
   min-width: 0;
 `;
@@ -279,4 +286,13 @@ const Error = styled.div`
   padding: 14px 0;
   color: #d32f2f;
   font-size: 14px;
+`;
+
+const ThumbImg = styled.img`
+  width: 64px;
+  height: 64px;
+  border-radius: 8px;
+  object-fit: cover;
+  background: #f3f3f3;
+  display: block;
 `;
