@@ -34,6 +34,7 @@ export default function MyOrderHistory() {
         if (!alive) return;
         setOrders(Array.isArray(data) ? data : []);
       } catch (e) {
+        console.log(e);
         if (!alive) return;
         setErrorMsg("주문 내역을 불러오지 못했어요.");
       } finally {
@@ -144,7 +145,7 @@ const List = styled.div`
 `;
 
 const OrderCard = styled.div`
-  background: #fff;
+  background: #fffcfcff;
   border: 1px solid #eee;
   border-radius: 10px;
   overflow: hidden;
