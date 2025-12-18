@@ -206,11 +206,6 @@ const ItemRow = styled.div`
   &:first-child {
     border-top: none;
   }
-
-  @media (max-width: 720px) {
-    grid-template-columns: 64px 1fr;
-    grid-template-rows: auto auto;
-  }
 `;
 
 const Thumb = styled.div`

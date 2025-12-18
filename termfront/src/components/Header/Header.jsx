@@ -93,17 +93,15 @@ export default function Header() {
           <Center>
             <Nav>
               <NavItem>
-                <NavLink href="/blackfriday">슈퍼 블랙프라이데이</NavLink>
+                <NavLink href="/">슈퍼 블랙프라이데이</NavLink>
               </NavItem>
 
               <NavItem>
-                <NavLink href="/stores">매장 위치</NavLink>
+                <NavLink href="/">매장 위치</NavLink>
               </NavItem>
 
               <NavItem onMouseEnter={openMega}>
-                <NavLinkStrong href="/sustainability">
-                  지속 가능성
-                </NavLinkStrong>
+                <NavLinkStrong href="/">지속 가능성</NavLinkStrong>
               </NavItem>
             </Nav>
           </Center>
@@ -177,10 +175,10 @@ export default function Header() {
                     <span>올버즈</span>
                   </MegaTitle>
                   <MegaList>
-                    <MegaLink href="/about/brand-story">브랜드 스토리</MegaLink>
-                    <MegaLink href="/sustainability">지속 가능성</MegaLink>
-                    <MegaLink href="/about/intro">소개</MegaLink>
-                    <MegaLink href="/about/mission">수선</MegaLink>
+                    <MegaLink href="/">브랜드 스토리</MegaLink>
+                    <MegaLink href="/">지속 가능성</MegaLink>
+                    <MegaLink href="/">소개</MegaLink>
+                    <MegaLink href="/">수선</MegaLink>
                   </MegaList>
                 </MegaCol>
 
@@ -189,12 +187,10 @@ export default function Header() {
                     <span>스토리</span>
                   </MegaTitle>
                   <MegaList>
-                    <MegaLink href="/story/allbirds-lab">올맴버스</MegaLink>
-                    <MegaLink href="/story/ambassador">
-                      올버즈 앰배서더
-                    </MegaLink>
-                    <MegaLink href="/story/rerun">ReRun</MegaLink>
-                    <MegaLink href="/story/care">신발 관리 방법</MegaLink>
+                    <MegaLink href="/">올맴버스</MegaLink>
+                    <MegaLink href="/">올버즈 앰배서더</MegaLink>
+                    <MegaLink href="/">ReRun</MegaLink>
+                    <MegaLink href="/">신발 관리 방법</MegaLink>
                   </MegaList>
                 </MegaCol>
 
@@ -203,8 +199,8 @@ export default function Header() {
                     <span>소식</span>
                   </MegaTitle>
                   <MegaList>
-                    <MegaLink href="/news/campaign">캠페인</MegaLink>
-                    <MegaLink href="/news">뉴스</MegaLink>
+                    <MegaLink href="/">캠페인</MegaLink>
+                    <MegaLink href="/">뉴스</MegaLink>
                   </MegaList>
                 </MegaCol>
               </MegaGrid>
