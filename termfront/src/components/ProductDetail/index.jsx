@@ -72,7 +72,7 @@ const ProductDetail = ({ product, reviews }) => {
             images={product?.images}
             currentIndex={selectedImageIndex}
           />
-          <Accordion />
+          <Accordion product={product} />
         </LeftColumn>
         <RightColumn>
           <ProductInfo

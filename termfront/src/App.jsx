@@ -10,12 +10,13 @@ import MyPage from "./pages/MyPage";
 import { CartProvider } from "./context/CartProvider";
 import CartSidebar from "./components/cart/CartSidebar";
 import ReviewWritePage from "./pages/ReviewWritePage";
-
+import ScrollToTop from "./components/ScrollToTop";
 export default function App() {
   return (
     <CartProvider>
       <GlobalStyle />
       <BrowserRouter>
+        <ScrollToTop />
         <Routes>
           <Route element={<RootLayout />}>
             <Route path="/" element={<MainPage />} />

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useMemo } from "react";
 import styled from "styled-components";
 
 const Sidebar = styled.aside`
@@ -136,27 +136,15 @@ const Checkbox = styled.span`
   }
 `;
 
-const FilterSidebar = ({ filters, onFilterChange, onReset }) => {
-  const sizes = [
-    "220",
-    "230",
-    "240",
-    "250",
-    "255",
-    "260",
-    "265",
-    "270",
-    "275",
-    "280",
-    "285",
-    "290",
-    "295",
-    "300",
-    "305",
-    "310",
-    "315",
-    "320",
-  ];
+const FilterSidebar = ({ filters, onFilterChange, onReset, products = [] }) => {
+  // ✅ 서버 데이터에서 동적으로 사이즈 목록 생성 (수정된 부분)
+  const sizes = useMemo(() => {
+    const allSizesSet = new Set();
+    products.forEach((product) => {
+      (product.allSizes || []).forEach((size) => allSizesSet.add(size));
+    });
+    return [...allSizesSet].sort((a, b) => a - b).map(String);
+  }, [products]);
 
   // 소재 (필터링 기능 있음)
   const materials = ["가볍고 시원한 Tree", "부드럽고 따뜻한 Wool"];

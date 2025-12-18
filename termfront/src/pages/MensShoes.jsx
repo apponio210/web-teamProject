@@ -333,6 +333,11 @@ const MensShoes = () => {
         }
 
         const data = await getProducts(params);
+        console.log("서버 원본 응답:", data);
+        const transformed = transformProducts(data);
+
+        // 👇 변환 후 데이터도 확인
+        console.log("변환된 데이터:", transformed);
         setProducts(transformProducts(data));
       } catch (err) {
         setError(err.message);
@@ -459,10 +464,12 @@ const MensShoes = () => {
       <Divider />
 
       <PageContent>
+        {/* ✅ products 전달 추가 (수정된 부분) */}
         <FilterSidebar
           filters={filters}
           onFilterChange={handleFilterChange}
           onReset={handleResetFilters}
+          products={products}
         />
         <MainContent>
           <ContentHeader>
